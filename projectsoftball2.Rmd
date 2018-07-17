@@ -1,0 +1,4339 @@
+---
+title: "ProjectSoftball2"
+author: "Matt Brownsword"
+date: "8/1/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+
+# Load data
+
+
+season1$play<-trimws(season1$playID)
+.# Create a measure of outs
+
+sum(grepl("[[:space:]]out[[:punct:]]",season1$play))
+sum(grepl("[[:space:]]out[[:space:]]| popped |[[:space:]]out[:punct:]",season1$play))
+
+
+sum(grepl("double play",season1$play))
+# No Triple Plays
+sum(grepl("triple play",season1$play))
+sum(grepl("struck out swinging reached",season1$play))
+sum(grepl("[[:space:]]out.*reached",season1$play))
+
+
+# 
+sum(grepl("[[:space:]]out.*reached",season1$play))
+
+season1$play[grepl("[[:space:]]out.*reached",season1$play)]
+season1$play[grepl("outh",season1$play)]
+
+# How many outs occurred because of play
+season1$outs_from_play<-as.numeric(grepl("[[:space:]]out[[:space:]]| popped |[[:space:]]out[[:punct:]]",season1$play))
+table(season1$outs_from_play)
+season1$outs_from_play[grepl("double play",season1$play)]<-2
+# Remove people who reached after striking out
+season1$outs_from_play[grepl("[[:space:]]out.*reached",season1$play)]<-0
+season1$outs_from_play[grepl("struck out reached",season1$play)]<-0
+
+table(season1$outs_from_play)
+
+# Remove inning summaries
+season1$play[1:11]
+inning_summaries<-season1[grepl("R: ",season1$play),]
+season1<-season1[!grepl("R: ",season1$play),]
+
+#Taking out non-plays in the data
+
+season1<-season1[!((grepl("to[[:space:]][[:alpha:]][[:alpha:]][[:space:]]for",season1$play))),]
+season1<-season1[!(grepl("to[[:space:]][[:digit:]][[:alpha:]][[:space:]]for",season1$play)),]
+season1<-season1[!(grepl("to[[:space:]][[:alpha:]][[:space:]]for",season1$play)),]
+season1<-season1[!(grepl("pinch[[:space:]]ran",season1$play)),]
+season1<-season1[!(grepl("pinch[[:space:]]hit",season1$play)),]
+season1<-season1[!((grepl("\\S[^[:space:]o][^0-9u][^t][[:space:]]to[[:space:]][[:alpha:]][[:alpha:]][[:punct:]]",season1$play))),]
+season1<-season1[!(grepl("\\S[^[:space:]o][^u][^t][[:space:]]to[[:space:]][[:digit:]][[:alpha:]][[:punct:]]",season1$play)),]
+season1<-season1[!(grepl("\\S[^[:space:]o][^u][^t][[:space:]]to[[:space:]][[:alpha:]][[:punct:]]",season1$play)),]
+season1<-season1[!((grepl("\\S[^u][^p][[:space:]]to[[:space:]][[:alpha:]][[:alpha:]][[:punct:]]",season1$play))),]
+season1<-season1[!(grepl("\\S[^u][^p][[:space:]]to[[:space:]][[:digit:]][[:alpha:]][[:punct:]]",season1$play)),]
+season1<-season1[!(grepl("\\S[^u][^p][[:space:]]to[[:space:]][[:alpha:]][[:punct:]]",season1$play)),]
+
+season1<-season1[!(grepl("to[[:space:]]dh[[:punct:]]",season1$play)),]
+season1<-season1[!(grepl("No[[:space:]]play[[:punct:]]",season1$play)),]
+
+```
+
+#5
+
+```{r}
+games<-unique(season1$game_id)
+game<-season1[season1$game_id==games[1],]
+innings<-unique(game$period_id)
+#games<-sample(games,100)
+# Total outs in inning
+season1$total_outs_in_inning<-NA
+for(k in games){
+    innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+       season1$total_outs_in_inning[season1$period_id==i&season1$game_id==k
+]<-cumsum(season1$outs_from_play[season1$period_id==i&season1$game_id==k
+])
+}
+}
+
+season1$top_bottom<-NA
+season1$top_bottom[season1$total_outs_in_inning<4]<-"top"
+season1$top_bottom[season1$total_outs_in_inning>3]<-"bottom"
+
+# Total outs before play
+season1$outs_before_play<-0
+
+# Top of Inning
+for(k in games){
+        innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+        n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"])
+        if(n==1){
+            season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-0
+        }else{
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][2:n]<-cumsum(season1$outs_from_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1:n-1])
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-0
+    }}}
+# Bottom of Inning
+for(k in games){
+        innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+        n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"])
+        if(n==1){
+            season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-0
+        }else{
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][2:n]<-cumsum(season1$outs_from_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1:n-1])
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-0
+    }}}
+
+# Fix transition from top to bottom
+season1$top_bottom[season1$outs_before_play==3]<-"bottom"
+
+
+# Top of Inning
+for(k in games){
+        innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+        n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"])
+        if(n==1){
+            season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-0
+        }else{
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][2:n]<-cumsum(season1$outs_from_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1:n-1])
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-0
+}}}
+# Bottom of Inning
+for(k in games){
+        innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+        n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"])
+         if(n==1){
+            season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-0
+        }else{
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][2:n]<-cumsum(season1$outs_from_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1:n-1])
+       season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-0
+}}}
+
+# Check
+game[game$period_id==4,c("play","top_bottom","outs_from_play","outs_before_play","total_outs_in_inning")]==season1[season1$game_id==games[1]&season1$period_id==4,c("play","top_bottom","outs_from_play","outs_before_play","total_outs_in_inning")]
+
+# Look at Random Game
+season1[season1$game_id==games[24]&season1$period_id==3,c("play","top_bottom","outs_from_play","outs_before_play","total_outs_in_inning")]
+summary(season1$outs_before_play)
+table(season1$outs_before_play)
+season1$game_id[season1$outs_before_play==3]
+
+
+
+
+
+
+
+#Games found to be problematic after calculating outs
+season1<-season1[!(season1$game_id==4019409),]
+season1<-season1[!(season1$game_id==4011385),]
+season1<-season1[!(season1$game_id==4014180),]
+season1<-season1[!(season1$game_id==4017578),]
+season1<-season1[!(season1$game_id==4014830),]
+season1<-season1[!(season1$game_id==4021185),]
+season1<-season1[!(season1$game_id==4032124),]
+season1<-season1[!(season1$game_id==4044036),]
+```
+
+```{r}
+save(season1,file="season1.rda")
+```
+
+#6
+
+```{r}
+# Create a measure of runs
+
+sum(grepl("RBI", season1$play))
+sum(grepl("scored", season1$play))
+
+# There are 13772-13070 plays in which runs were scored not accounted for just by grepl("RBI") because some are scored, unearned
+
+#Show how many runs come from one play
+twoRBIs<-sum(grepl("2[[:space:]]RBI[[:space:]]",season1$play))
+twoRBIp<-sum(grepl("2[[:space:]]RBI[[:punct:]]",season1$play))
+threeRBIs<-sum(grepl("3[[:space:]]RBI[[:space:]]",season1$play))
+threeRBIp<-sum(grepl("3[[:space:]]RBI[[:punct:]]",season1$play))
+fourRBIs<-sum(grepl("4[[:space:]]RBI[[:space:]]",season1$play))
+fourRBIp<-sum(grepl("4[[:space:]]RBI[[:punct:]]",season1$play))
+  
+totalRBIs<-sum(grepl("[[:space:]]RBI[[:space:]]",season1$play))+sum(grepl("[[:space:]]RBI[[:punct:]]",season1$play))
+totalRBIs
+
+
+totalScoringPlays<-sum(grepl("[[:space:]]scored[[:space:]]",season1$play))+sum(grepl("[[:space:]]scored[[:punct:]]",season1$play))
+
+miscRuns<-totalScoringPlays-totalRBIs
+miscRuns
+
+
+# How many runs occurred because of play
+
+season1$runs_from_play<-as.numeric(grepl("[[:space:]]scored[[:space:]]|[[:space:]]scored[[:punct:]]" , season1$play))
+
+
+table(season1$runs_from_play)
+season1$runs_from_play[grepl("2[[:space:]]RBI[[:space:]]",season1$play)]<-2
+season1$runs_from_play[grepl("2[[:space:]]RBI[[:punct:]]",season1$play)]<-2
+season1$runs_from_play[grepl("3[[:space:]]RBI[[:space:]]",season1$play)]<-3
+season1$runs_from_play[grepl("3[[:space:]]RBI[[:punct:]]",season1$play)]<-3
+season1$runs_from_play[grepl("4[[:space:]]RBI[[:space:]]",season1$play)]<-4
+season1$runs_from_play[grepl("4[[:space:]]RBI[[:punct:]]",season1$play)]<-4
+
+season1$runs_from_play[grepl("[^0-9][[:space:]]RBI[[:space:]]",season1$play)]<-1
+season1$runs_from_play[grepl("[^0-9][[:space:]]RBI[[:punct:]]",season1$play)]<-1
+table(season1$runs_from_play)
+
+```
+
+#7
+
+```{r}
+games<-unique(season1$game_id)
+games<-unique(season1$game_id)
+
+game<-season1[season1$game_id==games[1],]
+dim(game) 
+
+
+
+
+innings<-unique(game$period_id)
+# Look at plays for one inning
+
+game$play[game$period_id==3]
+game$play[game$period_id==3&game$runs_from_play==1]
+game$runs_from_play
+
+# Look at runs in one inning
+game$runs_from_play[game$period_id==0]
+game$runs_from_play[game$period_id==3]
+
+# Total runs in inning
+game$total_runs_in_inning<-NA
+for(i in innings){
+       game$total_runs_in_inning[game$period_id==i]<-cumsum(game$runs_from_play[game$period_id==i])
+    }
+
+
+# Create empty vector for Total outs before play
+game$runs_before_play<-0
+
+# Total runs before play in top of Inning
+for(i in innings){
+        n<-length(game$outs_before_play[game$period_id==i&game$top_bottom=="top"])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="top"][2:n]<-cumsum(game$runs_from_play[game$period_id==i&game$top_bottom=="top"][1:n-1])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="top"][1]<-0
+    }
+# Total outs before play in bottom of Inning
+for(i in innings){
+        n<-length(game$outs_before_play[game$period_id==i&game$top_bottom=="bottom"])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="bottom"][2:n]<-cumsum(game$runs_from_play[game$period_id==i&game$top_bottom=="bottom"][1:n-1])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="bottom"][1]<-0
+    }
+
+
+
+# Top of Inning
+for(i in innings){
+        n<-length(game$outs_before_play[game$period_id==i&game$top_bottom=="top"])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="top"][2:n]<-cumsum(game$runs_from_play[game$period_id==i&game$top_bottom=="top"][1:n-1])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="top"][1]<-0
+    }
+# Bottom of Inning
+for(i in innings){
+        n<-length(game$outs_before_play[game$period_id==i&game$top_bottom=="bottom"])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="bottom"][2:n]<-cumsum(game$runs_from_play[game$period_id==i&game$top_bottom=="bottom"][1:n-1])
+       game$runs_before_play[game$period_id==i&game$top_bottom=="bottom"][1]<-0
+    }
+
+
+
+# Manually inseR to make sure things look right
+
+game[game$period_id==0,c("play","top_bottom","runs_from_play","runs_before_play","total_runs_in_inning")]
+
+game[game$period_id==1,c("play","top_bottom","runs_from_play","runs_before_play","total_runs_in_inning")]
+
+game[game$period_id==2,c("play","top_bottom","runs_from_play","runs_before_play","total_runs_in_inning")]
+
+
+game[game$period_id==3,c("play","top_bottom","runs_from_play","runs_before_play","total_runs_in_inning")]
+
+game[game$period_id==4,c("play","top_bottom","runs_from_play","runs_before_play","total_runs_in_inning")]
+
+
+```
+
+#8
+
+```{r}
+
+games<-unique(season1$game_id)
+#games<-sample(games,100)
+# Total runs in inning
+season1$total_runs_in_inning<-NA
+for(k in games){
+    innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+       season1$total_runs_in_inning[season1$period_id==i&season1$game_id==k
+]<-cumsum(season1$runs_from_play[season1$period_id==i&season1$game_id==k
+])
+}
+}
+
+
+
+
+# Total runs before play
+season1$runs_before_play<-0
+
+# Top of Inning
+for(k in games){
+        innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+        n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"])
+        if(n==1){
+            season1$runs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-0
+        }else{
+       season1$runs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][2:n]<-cumsum(season1$runs_from_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1:n-1])
+       season1$runs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-0
+    }}}
+# Bottom of Inning
+for(k in games){
+        innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+        n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"])
+        if(n==1){
+            season1$runs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-0
+        }else{
+       season1$runs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][2:n]<-cumsum(season1$runs_from_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1:n-1])
+       season1$runs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-0
+    }}}
+
+
+
+
+
+# Check
+hist(season1$total_runs_in_inning)
+summary(season1$total_runs_in_inning)
+```
+
+
+
+```{r}
+
+save(season1,file="season1.rda")
+```
+
+#9
+
+```{r}
+
+#Creating Indicators for baserunners 
+
+
+season1$firstbase<-NA
+season1$firstbase[grepl("[[:space:]]singled",season1$play)]<-1
+season1$firstbase[grepl("[[:space:]]walked",season1$play)]<-1
+season1$firstbase[grepl("[[:space:]]reached[[:space:]]on[[:space:]]an[[:space:]]error",season1$play)]<-1
+season1$firstbase[grepl("[[:space:]]hit[[:space:]]by[[:space:]]pitch",season1$play)]<-1
+season1$firstbase[grepl("[[:space:]]catcher's[[:space:]]interference",season1$play)]<-1
+season1$firstbase[grepl("[[:space:]]reached[[:space:]]first[[:space:]]on[[:space:]]a[[:space:]]passed[[:space:]]ball", season1$play)]<-1
+season1$firstbase[grepl("[[:space:]]advanced[[:space:]]to[[:space:]]first",season1$play)]<-1
+season1$firstbase[grepl("[[:space:]]out[[:space:]]at[[:space:]]first",season1$play)]<-NA
+season1$firstbase[grepl("[[:space:]]stole[[:space:]]second",season1$play)]<-NA
+season1$firstbase[grepl("[[:space:]]homered",season1$play)]<-0
+season1$firstbase[grepl("[[:space:]]doubled",season1$play)]<-NA
+season1$firstbase[grepl("[[:space:]]reached[[:space:]]on[[:space:]]a[[:space:]]fielder's[[:space:]]choice", season1$play)]<-1
+season1$firstbase[grepl("advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]the[[:space:]]throw", season1$play)]<-NA
+season1$firstbase[grepl("singled[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("base[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("field[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("center[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("middle[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("side[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("choice[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("error[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)]<-NA
+season1$firstbase[grepl("by[[:space:]][[:alpha:]][[:alpha:]][[:space:]]advanced[[:space:]]to[[:space:]]second", season1$play)]<-NA
+season1$firstbase[grepl("by[[:space:]][[:digit:]][[:alpha:]][[:space:]]advanced[[:space:]]to[[:space:]]second", season1$play)]<-NA
+season1$firstbase[grepl("by[[:space:]][[:alpha:]][[:space:]]advanced[[:space:]]to[[:space:]]second", season1$play)]<-NA
+
+
+
+season1$secondbase<-NA
+season1$secondbase[grepl("[[:space:]]advanced[[:space:]]to[[:space:]]second",season1$play)]<-1
+season1$secondbase[grepl("[[:space:]]doubled",season1$play)]<-1
+season1$secondbase[grepl("[[:space:]]out[[:space:]]at[[:space:]]second",season1$play)]<-NA
+season1$secondbase[grepl("[[:space:]]stole[[:space:]]third",season1$play)]<-NA
+season1$secondbase[grepl("[[:space:]]homered",season1$play)]<-0
+season1$secondbase[grepl("[[:space:]]tripled",season1$play)]<-NA
+season1$secondbase[grepl("placed[[:space:]]on[[:space:]]second",season1$play)]<-1
+season1$secondbase[grepl("[[:space:]]stole[[:space:]]second[[:space:]][^a]",season1$play)]<-1
+season1$secondbase[grepl("[[:space:]]stole[[:space:]]second[^.[:space:]]",season1$play)]<-1
+
+
+season1$thirdbase<-NA
+season1$thirdbase[grepl("[[:space:]]advanced[[:space:]]to[[:space:]]third",season1$play)]<-1
+season1$thirdbase[grepl("[[:space:]]tripled",season1$play)]<-1
+season1$thirdbase[grepl("[[:space:]]out[[:space:]]at[[:space:]]third",season1$play)]<-NA
+season1$thirdbase[grepl("[[:space:]]homered",season1$play)]<-0
+season1$thirdbase[grepl("scored[[:space:]]on[[:space:]]a[[:space:]]wild[[:space:]]pitch",season1$play)]<-0
+season1$thirdbase[grepl("scored[[:space:]]on[[:space:]]an[[:space:]]illegal[[:space:]]pitch",season1$play)]<-0
+season1$thirdbase[grepl("scored[[:space:]]on[[:space:]]a[[:space:]]passed[[:space:]]ball",season1$play)]<-0
+season1$thirdbase[grepl("[[:space:]]stole[[:space:]]second[^.[:space:]]",season1$play)]<-1
+season1$thirdbase[grepl("[[:space:]]stole[[:space:]]second[[:space:]][^a]",season1$play)]<-1
+
+
+
+#Special Conditions
+
+
+season1$firstbase[grepl("[[:space:]]singled",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-NA
+season1$firstbase[grepl("[[:space:]]singled",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-NA
+season1$firstbase[grepl("[[:space:]]singled",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-NA
+
+season1$firstbase[grepl("[[:space:]]walked",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-NA
+
+season1$firstbase[grepl("[[:space:]]walked",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-NA
+
+season1$firstbase[grepl("[[:space:]]reached[[:space:]]on[[:space:]]an[[:space:]]error[[:space:]]",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-NA
+
+season1$firstbase[grepl("[[:space:]]reached[[:space:]]on[[:space:]]an[[:space:]]error[[:space:]]",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-NA
+
+season1$firstbase[grepl("[[:space:]]hit[[:space:]]by[[:space:]]pitch",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-NA
+season1$firstbase[grepl("[[:space:]]hit[[:space:]]by[[:space:]]pitch",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-NA
+
+season1$firstbase[grepl("[[:space:]]catcher's[[:space:]]interference",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-NA
+season1$firstbase[grepl("[[:space:]]catcher's[[:space:]]interference",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-NA
+
+season1$firstbase[grepl("[[:space:]]reached[[:space:]]first[[:space:]]on[[:space:]]a[[:space:]]passed[[:space:]]ball",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-NA
+
+
+
+season1$secondbase[grepl("[[:space:]]stole[[:space:]]second[.]",season1$play)]<-NA
+
+#Indicators for Special Conditions
+
+season1$temp<-0
+
+season1$temp[grepl("[[:space:]]singled",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-1
+
+
+
+season1$temp[grepl("[[:space:]]walked",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-1
+
+
+
+season1$temp[grepl("[[:space:]]reached[[:space:]]on[[:space:]]an[[:space:]]error[[:space:]]",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-1
+
+
+
+season1$temp[grepl("[[:space:]]hit[[:space:]]by[[:space:]]pitch",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-1
+
+
+season1$temp[grepl("[[:space:]]catcher's[[:space:]]interference",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-1
+
+
+season1$temp[grepl("[[:space:]]reached[[:space:]]first[[:space:]]on[[:space:]]a[[:space:]]passed[[:space:]]ball",season1$play)&is.na(season1$secondbase)&is.na(season1$thirdbase)]<-1
+
+
+
+season1$temp[grepl("[[:space:]]stole[[:space:]]second[.]",season1$play)]<-2
+
+season1$temp[grepl("[[:space:]]stole[[:space:]]third[.]",season1$play)]<-3
+
+season1$temp[grepl("[[:space:]]singled",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-4
+
+season1$temp[grepl("[[:space:]]catcher's[[:space:]]interference",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-4
+
+season1$temp[grepl("[[:space:]]hit[[:space:]]by[[:space:]]pitch",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-4
+
+season1$temp[grepl("[[:space:]]reached[[:space:]]on[[:space:]]an[[:space:]]error[[:space:]]",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-4
+
+season1$temp[grepl("[[:space:]]walked",season1$play)&season1$secondbase==1&is.na(season1$thirdbase)]<-4
+
+season1$temp[grepl("advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]the[[:space:]]throw", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("singled[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("base[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("field[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("center[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("middle[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("side[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("choice[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("error[[:space:]]advanced[[:space:]]to[[:space:]]second[[:space:]]on[[:space:]]an[[:space:]]error", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("by[[:space:]][[:alpha:]][[:alpha:]][[:space:]]advanced[[:space:]]to[[:space:]]second", season1$play)]<-5
+season1$temp[grepl("by[[:space:]][[:digit:]][[:alpha:]][[:space:]]advanced[[:space:]]to[[:space:]]second", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("by[[:space:]][[:alpha:]][[:space:]]advanced[[:space:]]to[[:space:]]second", season1$play)&is.na(season1$thirdbase)]<-5
+season1$temp[grepl("caught[[:space:]]stealing", season1$play)]<-6
+
+
+
+season1$base_state_after<-NA
+
+
+
+
+
+
+
+
+
+#Nobody On
+
+
+season1$base_state_after[season1$firstbase==0&season1$secondbase==0&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==0]<-"Nobody on, No Outs"
+season1$base_state_after[season1$firstbase==0&season1$secondbase==0&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==1]<-"Nobody on, One out"
+season1$base_state_after[season1$firstbase==0&season1$secondbase==0&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==2]<-"Nobody on, Two outs"
+
+
+season1$base_state_after[is.na(season1$firstbase)&is.na(season1$secondbase)&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==0]<-"Nobody on, No Outs"
+season1$base_state_after[is.na(season1$firstbase)&is.na(season1$secondbase)&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==1]<-"Nobody on, One out"
+season1$base_state_after[is.na(season1$firstbase)&is.na(season1$secondbase)&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==2]<-"Nobody on, Two outs"
+
+
+
+
+
+
+
+
+#Runners on First
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==0]<-"Runner on 1st, No outs"
+
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==0]<-"Runner on 1st, No outs"
+
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==1]<-"Runner on 1st, One out"
+
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==1]<-"Runner on 1st, One out"
+
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==2]<-"Runner on 1st, Two outs"
+
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==2]<-"Runner on 1st, Two outs"
+
+
+
+
+##Runner on 2nd
+
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==0]<-"Runner on 2nd, No outs"
+
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==0]<-"Runner on 2nd, No outs"
+
+
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==1]<-"Runner on 2nd, One out"
+
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==1]<-"Runner on 2nd, One out"
+
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==2]<-"Runner on 2nd, Two outs"
+
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==2]<-"Runner on 2nd, Two outs"
+
+#Runner on third
+
+
+season1$base_state_after[is.na(season1$firstbase)&is.na(season1$secondbase)&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==0]<-"Runner on 3rd, No outs"
+season1$base_state_after[is.na(season1$firstbase)&is.na(season1$secondbase)&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==1]<-"Runner on 3rd, One out"
+season1$base_state_after[is.na(season1$firstbase)&is.na(season1$secondbase)&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==2]<-"Runner on 3rd, Two outs"
+
+#Runners on 1st and 2nd
+
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==0]<-"Runners on 1st and 2nd, No outs"
+
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==0]<-"Runners on 1st and 2nd, No outs"
+
+
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==1]<-"Runners on 1st and 2nd, One out"
+
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==1]<-"Runners on 1st and 2nd, One out"
+
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&is.na(season1$thirdbase)&season1$outs_before_play+season1$outs_from_play==2]<-"Runners on 1st and 2nd, Two outs"
+
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&season1$thirdbase==0&season1$outs_before_play+season1$outs_from_play==2]<-"Runners on 1st and 2nd, Two outs"
+
+#Runners on 2nd and 3rd
+
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==0]<-"Runners on 2nd and 3rd, No outs"
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==1]<-"Runners on 2nd and 3rd, One out"
+season1$base_state_after[is.na(season1$firstbase)&season1$secondbase==1&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==2]<-"Runners on 2nd and 3rd, Two outs"
+
+
+#Runners on 1st and 3rd
+
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==0]<-"Runners on 1st and 3rd, No outs"
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==1]<-"Runners on 1st and 3rd, One out"
+season1$base_state_after[season1$firstbase==1&is.na(season1$secondbase)&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==2]<-"Runners on 1st and 3rd, Two outs"
+
+#Bases Loaded
+
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==0]<-"Bases Loaded, No outs"
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==1]<-"Bases Loaded, One out"
+season1$base_state_after[season1$firstbase==1&season1$secondbase==1&season1$thirdbase==1&season1$outs_before_play+season1$outs_from_play==2]<-"Bases Loaded, Two outs"
+
+
+season1$base_state_after[season1$temp==1]<-"placeholder"
+season1$base_state_after[season1$temp==2]<-"placeholder"
+season1$base_state_after[season1$temp==3]<-"placeholder"
+season1$base_state_after[season1$temp==4]<-"placeholder"
+
+```
+
+
+
+#10
+
+```{r}
+
+#Setting the table for the base_State_before, including starting each inning with "Nobody on, No Outs"
+
+season1$base_state_before<-NA
+
+
+
+
+#Top of inning
+for(k in games){
+       innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+
+n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"])
+       if(n==1){
+           season1$base_state_before[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-"Nobody on, No Outs"
+       }else{
+      season1$base_state_before[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][2:n]<-(season1$base_state_after[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1:n-1])
+      season1$base_state_before[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="top"][1]<-"Nobody on, No Outs"
+       }}}
+# Bottom of Inning
+for(k in games){
+        innings<-unique(season1$period_id[season1$game_id==k])
+for(i in innings){
+        n<-length(season1$outs_before_play[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"])
+        if(n==1){
+            season1$base_state_before[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-"Nobody on, No Outs"
+        }else{
+       season1$base_state_before[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][2:n]<-(season1$base_state_after[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1:n-1])
+       season1$base_state_before[season1$period_id==i&season1$game_id==k
+&season1$top_bottom=="bottom"][1]<-"Nobody on, No Outs"
+    }}}
+
+
+
+```
+
+#11
+```{r}
+
+season1$base_state_before[is.na(season1$base_state_before)]<-"placeholder"
+
+#Nobody On
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+
+#Runner on 1st
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+#Runner on 2nd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+#Runner on 3rd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+#Runners on 1st and 2nd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+#Runners on 1st and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+#Runners on 2nd and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+#Bases Loaded
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+
+
+
+#Condition 1 — solo reach first
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+##Subset
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+##4
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+##6
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+# Condition 2 — the Stolen Base
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+
+
+#Condition 3 — stolen third
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+
+
+
+
+
+```
+
+#11.2
+```{r}
+
+season1$base_state_before[is.na(season1$base_state_before)]<-"placeholder"
+
+
+
+#Nobody On
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+
+#Runner on 1st
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+#Runner on 2nd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+#Runner on 3rd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+#Runners on 1st and 2nd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+#Runners on 1st and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+#Runners on 2nd and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+#Bases Loaded
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+
+
+
+#Condition 1 — solo reach first
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+##Subset
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+##4
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+##6
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+# Condition 2 — the Stolen Base
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+
+
+#Condition 3 — stolen third
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+
+
+
+
+
+```
+
+#11.3
+```{r}
+
+season1$base_state_before[is.na(season1$base_state_before)]<-"placeholder"
+
+
+
+#Nobody On
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+
+#Runner on 1st
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+#Runner on 2nd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+#Runner on 3rd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+#Runners on 1st and 2nd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+#Runners on 1st and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+#Runners on 2nd and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+#Bases Loaded
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+
+
+
+#Condition 1 — solo reach first
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+##Subset
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+##4
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+##6
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+# Condition 2 — the Stolen Base
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+
+
+#Condition 3 — stolen third
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+
+
+
+
+
+```
+
+#11.4
+```{r}
+
+season1$base_state_before[is.na(season1$base_state_before)]<-"placeholder"
+
+
+
+#Nobody On
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+
+#Runner on 1st
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+#Runner on 2nd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+#Runner on 3rd
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+#Runners on 1st and 2nd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+#Runners on 1st and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+#Runners on 2nd and 3rd
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+#Bases Loaded
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 3:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$outs_from_play[i-1]==1&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+
+
+
+#Condition 1 — solo reach first
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, No Outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Nobody on, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+##Subset
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==1){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 2nd and 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, No outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, One out"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 3rd, Two outs"&season1$temp[i-1]==1&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 1st, Two outs"}
+}
+
+##4
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==0){
+            season1$base_state_before[i]<-"Bases Loaded, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, No outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, One out"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Bases Loaded, Two outs"&season1$temp[i-1]==4&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]==2){
+            season1$base_state_before[i]<-"Runners on 1st and 2nd, Two outs"}
+}
+
+##6
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, No Outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Nobody on, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, Two outs"&season1$temp[i-1]==6&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+# Condition 2 — the Stolen Base
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 1st, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 2nd and 3rd, Two outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, No outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, One out"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 3rd, Two outs"&season1$temp[i-1]==2&season1$base_state_before[i]=="placeholder"&season1$runs_from_play[i-1]!=0){
+            season1$base_state_before[i]<-"Runner on 2nd, Two outs"}
+}
+
+
+
+#Condition 3 — stolen third
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runner on 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runner on 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, No outs"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, No outs"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, One out"}
+}
+
+for(i in 2:length(season1$outs_from_play)){
+       if(season1$base_state_before[i-1]=="Runners on 1st and 2nd, One out"&season1$temp[i-1]==3&season1$base_state_before[i]=="placeholder"){
+            season1$base_state_before[i]<-"Runners on 1st and 3rd, Two outs"}
+}
+
+
+table(season1$base_state_before)
+
+
+
+```
+
+
+
+
+```{r}
+save(season1,file="season1.rda")
+
+
+```
+
+
+
+#12
+
+```{r}
+
+#Max runs per half of an inning
+
+library(dplyr)
+runs_df1<-season1 %>% dplyr::group_by(game_id,period_id,top_bottom)%>%
+  dplyr::summarize(
+      runs=max(runs_before_play,na.rm=T)
+  )
+
+```
+
+
+#13
+
+
+```{r}
+
+#"Nobody on, No Outs"
+
+library(dplyr)
+nooneon_noout_runs_df1<-season1[season1$base_state_before=="Nobody on, No Outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+
+nooneon_noout_runs_df1<- merge(nooneon_noout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+nooneon_noout_runs_df1$runsReal<-nooneon_noout_runs_df1$runs-nooneon_noout_runs_df1$runsbefore
+
+summary(nooneon_noout_runs_df1$runsReal)
+length(nooneon_noout_runs_df1$runsReal)
+sum(nooneon_noout_runs_df1$runsReal)/sqrt(length(which(season1$base_state_before=="Nobody on, No Outs")))
+hist(nooneon_noout_runs_df1$runsReal)
+
+standarderror1<-sd(nooneon_noout_runs_df1$runsReal)/sqrt(length(which(season1$base_state_before=="Nobody on, No Outs")))
+standarderror1
+#95% confidence intervals of the mean
+nooneon_noout_runs_df1$ll<-mean(nooneon_noout_runs_df1$runsReal)-1.96*standarderror1
+nooneon_noout_runs_df1$ul<-mean(nooneon_noout_runs_df1$runsReal)+1.96*standarderror1
+
+nooneon_noout_runs_df1$ul[1]
+nooneon_noout_runs_df1$ll[1]
+
+
+(mean(nooneon_noout_runs_df1$runsReal,na.rm=T)-.555)/(standarderror1)
+
+
+```
+
+# 14
+
+```{r}
+
+#"Nobody on, One out"
+
+library(dplyr)
+
+nooneon_oneout_runs_df1<-season1[season1$base_state_before=="Nobody on, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+nooneon_oneout_runs_df1<- merge(nooneon_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+nooneon_oneout_runs_df1$runsReal<-nooneon_oneout_runs_df1$runs-nooneon_oneout_runs_df1$runsbefore
+
+mean(nooneon_oneout_runs_df1$runsReal,na.rm=T)
+table(nooneon_oneout_runs_df1$runsReal)
+sum(nooneon_oneout_runs_df1$runsReal)/length(nooneon_oneout_runs_df1$runsReal)
+hist(nooneon_oneout_runs_df1$runsReal)
+
+standarderror2<-sd(nooneon_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Nobody on, One out")))
+standarderror2
+#95% confidence intervals of the mean
+nooneon_oneout_runs_df1$ll<-mean(nooneon_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror2
+nooneon_oneout_runs_df1$ul<-mean(nooneon_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror2
+
+nooneon_oneout_runs_df1$ul[1]
+nooneon_oneout_runs_df1$ll[1]
+
+mean(nooneon_oneout_runs_df1$runsReal,na.r=T)-.297/(standarderror2)
+
+
+```
+
+#15
+
+
+```{r}
+#"Nobody on, Two outs"
+library(dplyr)
+
+nooneon_twoout_runs_df1<-season1[season1$base_state_before=="Nobody on, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+nooneon_twoout_runs_df1<- merge(nooneon_twoout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+nooneon_twoout_runs_df1$runsReal<-nooneon_twoout_runs_df1$runs-nooneon_twoout_runs_df1$runsbefore
+
+
+
+mean(nooneon_twoout_runs_df1$runsReal,na.rm=T)
+table(nooneon_twoout_runs_df1$runsReal)
+sum(nooneon_twoout_runs_df1$runsReal)/length(nooneon_twoout_runs_df1$runsReal)
+hist(nooneon_twoout_runs_df1$runsReal)
+
+
+standarderror3<-sd(nooneon_twoout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Nobody on, Two outs")))
+standarderror3
+#95% confidence intervals of the mean
+nooneon_twoout_runs_df1$ll<-mean(nooneon_twoout_runs_df1$runsReal,na.rm=T)-1.96*standarderror3
+nooneon_twoout_runs_df1$ul<-mean(nooneon_twoout_runs_df1$runsReal,na.rm=T)+1.96*standarderror3
+
+nooneon_twoout_runs_df1$ul[1]
+nooneon_twoout_runs_df1$ll[1]
+
+mean(nooneon_twoout_runs_df1$runsReal,na.r=T)-.117/(standarderror3)
+
+```
+
+#16
+
+```{r}
+
+library(dplyr)
+
+one_noout_runs_df1<-season1[season1$base_state_before=="Runner on 1st, No outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+one_noout_runs_df1<- merge(one_noout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+one_noout_runs_df1$runsReal<-one_noout_runs_df1$runs-one_noout_runs_df1$runsbefore
+
+
+
+mean(one_noout_runs_df1$runsReal,na.rm=T)
+table(one_noout_runs_df1$runsReal)
+sum(one_noout_runs_df1$runsReal)/length(one_noout_runs_df1$runsReal)
+hist(one_noout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror4<-sd(one_noout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 1st, No outs")))
+standarderror4
+#95% confidence intervals of the mean
+one_noout_runs_df1$ll<-mean(one_noout_runs_df1$runsReal,na.rm=T)-1.96*standarderror4
+one_noout_runs_df1$ul<-mean(one_noout_runs_df1$runsReal,na.rm=T)+1.96*standarderror4
+
+one_noout_runs_df1$ul[1]
+one_noout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(one_noout_runs_df1$runsReal,na.r=T)-.117/(standarderror4)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+#17
+
+```{r}
+
+library(dplyr)
+
+one_oneout_runs_df1<-season1[season1$base_state_before=="Runner on 1st, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+one_oneout_runs_df1<- merge(one_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+one_oneout_runs_df1$runsReal<-one_oneout_runs_df1$runs-one_oneout_runs_df1$runsbefore
+
+
+
+mean(one_oneout_runs_df1$runsReal,na.rm=T)
+table(one_oneout_runs_df1$runsReal)
+sum(one_oneout_runs_df1$runsReal)/length(one_oneout_runs_df1$runsReal)
+hist(one_oneout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror5<-sd(one_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 1st, One out")))
+standarderror5
+#95% confidence intervals of the mean
+one_oneout_runs_df1$ll<-mean(one_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror5
+one_oneout_runs_df1$ul<-mean(one_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror5
+
+one_oneout_runs_df1$ul[1]
+one_oneout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(one_oneout_runs_df1$runsReal,na.r=T)-.573/(standarderror5)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#18
+
+```{r}
+
+library(dplyr)
+
+one_twoouts_runs_df1<-season1[season1$base_state_before=="Runner on 1st, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+one_twoouts_runs_df1<- merge(one_twoouts_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+one_twoouts_runs_df1$runsReal<-one_twoouts_runs_df1$runs-one_twoouts_runs_df1$runsbefore
+
+
+
+mean(one_twoouts_runs_df1$runsReal,na.rm=T)
+table(one_twoouts_runs_df1$runsReal)
+sum(one_twoouts_runs_df1$runsReal)/length(one_twoouts_runs_df1$runsReal)
+hist(one_twoouts_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror6<-sd(one_twoouts_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 1st, Two outs")))
+standarderror6
+#95% confidence intervals of the mean
+one_twoouts_runs_df1$ll<-mean(one_twoouts_runs_df1$runsReal,na.rm=T)-1.96*standarderror6
+one_twoouts_runs_df1$ul<-mean(one_twoouts_runs_df1$runsReal,na.rm=T)+1.96*standarderror6
+
+one_twoouts_runs_df1$ul[1]
+one_twoouts_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(one_twoouts_runs_df1$runsReal,na.r=T)-.251/(standarderror6)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+#19
+
+```{r}
+
+library(dplyr)
+
+two_noout_runs_df1<-season1[season1$base_state_before=="Runner on 2nd, No outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+two_noout_runs_df1<- merge(two_noout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+two_noout_runs_df1$runsReal<-two_noout_runs_df1$runs-two_noout_runs_df1$runsbefore
+
+
+
+mean(two_noout_runs_df1$runsReal,na.rm=T)
+table(two_noout_runs_df1$runsReal)
+sum(two_noout_runs_df1$runsReal)/length(two_noout_runs_df1$runsReal)
+hist(two_noout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror7<-sd(two_noout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 2nd, No outs")))
+standarderror7
+#95% confidence intervals of the mean
+two_noout_runs_df1$ll<-mean(two_noout_runs_df1$runsReal,na.rm=T)-1.96*standarderror7
+two_noout_runs_df1$ul<-mean(two_noout_runs_df1$runsReal,na.rm=T)+1.96*standarderror7
+
+two_noout_runs_df1$ul[1]
+two_noout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(two_noout_runs_df1$runsReal,na.r=T)-.251/(standarderror7)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+#20
+
+```{r}
+
+library(dplyr)
+
+two_oneout_runs_df1<-season1[season1$base_state_before=="Runner on 2nd, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+two_oneout_runs_df1<- merge(two_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+two_oneout_runs_df1$runsReal<-two_oneout_runs_df1$runs-two_oneout_runs_df1$runsbefore
+
+
+
+mean(two_oneout_runs_df1$runsReal,na.rm=T)
+table(two_oneout_runs_df1$runsReal)
+sum(two_oneout_runs_df1$runsReal)/length(two_oneout_runs_df1$runsReal)
+hist(two_oneout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror8<-sd(two_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 2nd, One out")))
+standarderror8
+#95% confidence intervals of the mean
+two_oneout_runs_df1$ll<-mean(two_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror8
+two_oneout_runs_df1$ul<-mean(two_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror8
+
+two_oneout_runs_df1$ul[1]
+two_oneout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(two_oneout_runs_df1$runsReal,na.r=T)-.251/(standarderror8)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#21
+
+```{r}
+
+library(dplyr)
+
+two_twoout_runs_df1<-season1[season1$base_state_before=="Runner on 2nd, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+two_twoout_runs_df1<- merge(two_twoout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+two_twoout_runs_df1$runsReal<-two_twoout_runs_df1$runs-two_twoout_runs_df1$runsbefore
+
+
+
+mean(two_twoout_runs_df1$runsReal,na.rm=T)
+table(two_twoout_runs_df1$runsReal)
+sum(two_twoout_runs_df1$runsReal)/length(two_twoout_runs_df1$runsReal)
+hist(two_twoout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror9<-sd(two_twoout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 2nd, Two outs")))
+standarderror9
+#95% confidence intervals of the mean
+two_twoout_runs_df1$ll<-mean(two_twoout_runs_df1$runsReal,na.rm=T)-1.96*standarderror9
+two_twoout_runs_df1$ul<-mean(two_twoout_runs_df1$runsReal,na.rm=T)+1.96*standarderror9
+
+two_twoout_runs_df1$ul[1]
+two_twoout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(two_twoout_runs_df1$runsReal,na.r=T)-.251/(standarderror9)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+#22
+
+```{r}
+
+library(dplyr)
+
+three_noout_runs_df1<-season1[season1$base_state_before=="Runner on 3rd, No outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+three_noout_runs_df1<- merge(three_noout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+three_noout_runs_df1$runsReal<-three_noout_runs_df1$runs-three_noout_runs_df1$runsbefore
+
+
+
+mean(three_noout_runs_df1$runsReal,na.rm=T)
+table(three_noout_runs_df1$runsReal)
+sum(three_noout_runs_df1$runsReal)/length(three_noout_runs_df1$runsReal)
+hist(three_noout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror10<-sd(three_noout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 3rd, No outs")))
+standarderror10
+#95% confidence intervals of the mean
+three_noout_runs_df1$ll<-mean(three_noout_runs_df1$runsReal,na.rm=T)-1.96*standarderror10
+three_noout_runs_df1$ul<-mean(three_noout_runs_df1$runsReal,na.rm=T)+1.96*standarderror10
+
+three_noout_runs_df1$ul[1]
+three_noout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(three_noout_runs_df1$runsReal,na.r=T)-.251/(standarderror10)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#23
+
+```{r}
+
+library(dplyr)
+
+three_oneout_runs_df1<-season1[season1$base_state_before=="Runner on 3rd, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+three_oneout_runs_df1<- merge(three_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+three_oneout_runs_df1$runsReal<-three_oneout_runs_df1$runs-three_oneout_runs_df1$runsbefore
+
+
+
+mean(three_oneout_runs_df1$runsReal,na.rm=T)
+table(three_oneout_runs_df1$runsReal)
+sum(three_oneout_runs_df1$runsReal)/length(three_oneout_runs_df1$runsReal)
+
+hist(three_oneout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror11<-sd(three_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 3rd, One out")))
+standarderror11
+#95% confidence intervals of the mean
+three_oneout_runs_df1$ll<-mean(three_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror11
+three_oneout_runs_df1$ul<-mean(three_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror11
+
+three_oneout_runs_df1$ul[1]
+three_oneout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(three_oneout_runs_df1$runsReal,na.r=T)-.251/(standarderror11)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#24
+
+```{r}
+
+library(dplyr)
+
+three_twoout_runs_df1<-season1[season1$base_state_before=="Runner on 3rd, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+three_twoout_runs_df1<- merge(three_twoout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+three_twoout_runs_df1$runsReal<-three_twoout_runs_df1$runs-three_twoout_runs_df1$runsbefore
+
+
+
+mean(three_twoout_runs_df1$runsReal,na.rm=T)
+table(three_twoout_runs_df1$runsReal)
+sum(three_twoout_runs_df1$runsReal)/length(three_twoout_runs_df1$runsReal)
+hist(three_twoout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror12<-sd(three_twoout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runner on 3rd, Two outs")))
+standarderror12
+#95% confidence intervals of the mean
+three_twoout_runs_df1$ll<-mean(three_twoout_runs_df1$runsReal,na.rm=T)-1.96*standarderror12
+three_twoout_runs_df1$ul<-mean(three_twoout_runs_df1$runsReal,na.rm=T)+1.96*standarderror12
+
+three_twoout_runs_df1$ul[1]
+three_twoout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(three_twoout_runs_df1$runsReal,na.r=T)-.251/(standarderror12)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#25
+
+```{r}
+
+library(dplyr)
+
+onetwo_noout_runs_df1<-season1[season1$base_state_before=="Runners on 1st and 2nd, No outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onetwo_noout_runs_df1<- merge(onetwo_noout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onetwo_noout_runs_df1$runsReal<-onetwo_noout_runs_df1$runs-onetwo_noout_runs_df1$runsbefore
+
+
+
+mean(onetwo_noout_runs_df1$runsReal,na.rm=T)
+table(onetwo_noout_runs_df1$runsReal)
+sum(onetwo_noout_runs_df1$runsReal)/length(onetwo_noout_runs_df1$runsReal)
+hist(onetwo_noout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror13<-sd(onetwo_noout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 1st and 2nd, No outs")))
+standarderror13
+#95% confidence intervals of the mean
+onetwo_noout_runs_df1$ll<-mean(onetwo_noout_runs_df1$runsReal,na.rm=T)-1.96*standarderror13
+onetwo_noout_runs_df1$ul<-mean(onetwo_noout_runs_df1$runsReal,na.rm=T)+1.96*standarderror13
+
+onetwo_noout_runs_df1$ul[1]
+onetwo_noout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onetwo_noout_runs_df1$runsReal,na.r=T)-.251/(standarderror13)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#26
+
+```{r}
+
+library(dplyr)
+
+onetwo_oneout_runs_df1<-season1[season1$base_state_before=="Runners on 1st and 2nd, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onetwo_oneout_runs_df1<- merge(onetwo_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onetwo_oneout_runs_df1$runsReal<-onetwo_oneout_runs_df1$runs-onetwo_oneout_runs_df1$runsbefore
+
+
+
+mean(onetwo_oneout_runs_df1$runsReal,na.rm=T)
+table(onetwo_oneout_runs_df1$runsReal)
+sum(onetwo_oneout_runs_df1$runsReal)/length(onetwo_oneout_runs_df1$runsReal)
+hist(onetwo_oneout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror14<-sd(onetwo_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 1st and 2nd, One out")))
+standarderror14
+#95% confidence intervals of the mean
+onetwo_oneout_runs_df1$ll<-mean(onetwo_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror14
+onetwo_oneout_runs_df1$ul<-mean(onetwo_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror14
+
+onetwo_oneout_runs_df1$ul[1]
+onetwo_oneout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onetwo_oneout_runs_df1$runsReal,na.r=T)-.251/(standarderror14)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+#27
+
+```{r}
+
+library(dplyr)
+
+onetwo_twoouts_runs_df1<-season1[season1$base_state_before=="Runners on 1st and 2nd, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onetwo_twoouts_runs_df1<- merge(onetwo_twoouts_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onetwo_twoouts_runs_df1$runsReal<-onetwo_twoouts_runs_df1$runs-onetwo_twoouts_runs_df1$runsbefore
+
+
+
+mean(onetwo_twoouts_runs_df1$runsReal,na.rm=T)
+table(onetwo_twoouts_runs_df1$runsReal)
+sum(onetwo_twoouts_runs_df1$runsReal)/length(onetwo_twoouts_runs_df1$runsReal)
+hist(onetwo_twoouts_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror15<-sd(onetwo_twoouts_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 1st and 2nd, Two outs")))
+standarderror15
+#95% confidence intervals of the mean
+onetwo_twoouts_runs_df1$ll<-mean(onetwo_twoouts_runs_df1$runsReal,na.rm=T)-1.96*standarderror15
+onetwo_twoouts_runs_df1$ul<-mean(onetwo_twoouts_runs_df1$runsReal,na.rm=T)+1.96*standarderror15
+
+onetwo_twoouts_runs_df1$ul[1]
+onetwo_twoouts_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onetwo_twoouts_runs_df1$runsReal,na.r=T)-.251/(standarderror15)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#28
+
+```{r}
+
+library(dplyr)
+
+onethree_noout_runs_df1<-season1[season1$base_state_before=="Runners on 1st and 3rd, No outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onethree_noout_runs_df1<- merge(onethree_noout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onethree_noout_runs_df1$runsReal<-onethree_noout_runs_df1$runs-onethree_noout_runs_df1$runsbefore
+
+
+
+mean(onethree_noout_runs_df1$runsReal,na.rm=T)
+table(onethree_noout_runs_df1$runsReal)
+sum(onethree_noout_runs_df1$runsReal)/length(onethree_noout_runs_df1$runsReal)
+hist(onethree_noout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror16<-sd(onethree_noout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 1st and 3rd, No outs")))
+standarderror16
+#95% confidence intervals of the mean
+onethree_noout_runs_df1$ll<-mean(onethree_noout_runs_df1$runsReal,na.rm=T)-1.96*standarderror16
+onethree_noout_runs_df1$ul<-mean(onethree_noout_runs_df1$runsReal,na.rm=T)+1.96*standarderror16
+
+onethree_noout_runs_df1$ul[1]
+onethree_noout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onethree_noout_runs_df1$runsReal,na.r=T)-.251/(standarderror16)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#29
+
+```{r}
+
+library(dplyr)
+
+onethree_oneout_runs_df1<-season1[season1$base_state_before=="Runners on 1st and 3rd, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onethree_oneout_runs_df1<- merge(onethree_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onethree_oneout_runs_df1$runsReal<-onethree_oneout_runs_df1$runs-onethree_oneout_runs_df1$runsbefore
+
+
+
+mean(onethree_oneout_runs_df1$runsReal,na.rm=T)
+table(onethree_oneout_runs_df1$runsReal)
+sum(onethree_oneout_runs_df1$runsReal)/length(onethree_oneout_runs_df1$runsReal)
+hist(onethree_oneout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror17<-sd(onethree_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 1st and 3rd, One out")))
+standarderror17
+#95% confidence intervals of the mean
+onethree_oneout_runs_df1$ll<-mean(onethree_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror17
+onethree_oneout_runs_df1$ul<-mean(onethree_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror17
+
+onethree_oneout_runs_df1$ul[1]
+onethree_oneout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onethree_oneout_runs_df1$runsReal,na.r=T)-.251/(standarderror17)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#30
+
+```{r}
+
+library(dplyr)
+
+onethree_twoouts_runs_df1<-season1[season1$base_state_before=="Runners on 1st and 3rd, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onethree_twoouts_runs_df1<- merge(onethree_twoouts_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onethree_twoouts_runs_df1$runsReal<-onethree_twoouts_runs_df1$runs-onethree_twoouts_runs_df1$runsbefore
+
+
+
+mean(onethree_twoouts_runs_df1$runsReal,na.rm=T)
+table(onethree_twoouts_runs_df1$runsReal)
+sum(onethree_twoouts_runs_df1$runsReal)/length(onethree_twoouts_runs_df1$runsReal)
+hist(onethree_twoouts_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror18<-sd(onethree_twoouts_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 1st and 3rd, Two outs")))
+standarderror18
+#95% confidence intervals of the mean
+onethree_twoouts_runs_df1$ll<-mean(onethree_twoouts_runs_df1$runsReal,na.rm=T)-1.96*standarderror18
+onethree_twoouts_runs_df1$ul<-mean(onethree_twoouts_runs_df1$runsReal,na.rm=T)+1.96*standarderror18
+
+onethree_twoouts_runs_df1$ul[1]
+onethree_twoouts_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onethree_twoouts_runs_df1$runsReal,na.r=T)-.251/(standarderror18)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+#31
+
+```{r}
+
+library(dplyr)
+
+twothree_noout_runs_df1<-season1[season1$base_state_before=="Runners on 2nd and 3rd, No outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+twothree_noout_runs_df1<- merge(twothree_noout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+twothree_noout_runs_df1$runsReal<-twothree_noout_runs_df1$runs-twothree_noout_runs_df1$runsbefore
+
+
+
+mean(twothree_noout_runs_df1$runsReal,na.rm=T)
+table(twothree_noout_runs_df1$runsReal)
+sum(twothree_noout_runs_df1$runsReal)/length(twothree_noout_runs_df1$runsReal)
+hist(twothree_noout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror19<-sd(twothree_noout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 2nd and 3rd, No outs")))
+standarderror19
+#95% confidence intervals of the mean
+twothree_noout_runs_df1$ll<-mean(twothree_noout_runs_df1$runsReal,na.rm=T)-1.96*standarderror19
+twothree_noout_runs_df1$ul<-mean(twothree_noout_runs_df1$runsReal,na.rm=T)+1.96*standarderror19
+
+twothree_noout_runs_df1$ul[1]
+twothree_noout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(twothree_noout_runs_df1$runsReal,na.r=T)-.251/(standarderror19)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#32
+
+```{r}
+
+library(dplyr)
+
+twothree_oneout_runs_df1<-season1[season1$base_state_before=="Runners on 2nd and 3rd, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+twothree_oneout_runs_df1<- merge(twothree_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+twothree_oneout_runs_df1$runsReal<-twothree_oneout_runs_df1$runs-twothree_oneout_runs_df1$runsbefore
+
+
+
+mean(twothree_oneout_runs_df1$runsReal,na.rm=T)
+table(twothree_oneout_runs_df1$runsReal)
+sum(twothree_oneout_runs_df1$runsReal)/length(twothree_oneout_runs_df1$runsReal)
+hist(twothree_oneout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror20<-sd(twothree_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 2nd and 3rd, One out")))
+standarderror20
+#95% confidence intervals of the mean
+twothree_oneout_runs_df1$ll<-mean(twothree_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror20
+twothree_oneout_runs_df1$ul<-mean(twothree_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror20
+
+twothree_oneout_runs_df1$ul[1]
+twothree_oneout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(twothree_oneout_runs_df1$runsReal,na.r=T)-.251/(standarderror20)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#33
+
+```{r}
+
+library(dplyr)
+
+twothree_twoouts_runs_df1<-season1[season1$base_state_before=="Runners on 2nd and 3rd, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+twothree_twoouts_runs_df1<- merge(twothree_twoouts_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+twothree_twoouts_runs_df1$runsReal<-twothree_twoouts_runs_df1$runs-twothree_twoouts_runs_df1$runsbefore
+
+
+
+mean(twothree_twoouts_runs_df1$runsReal,na.rm=T)
+table(twothree_twoouts_runs_df1$runsReal)
+sum(twothree_twoouts_runs_df1$runsReal)/length(twothree_twoouts_runs_df1$runsReal)
+hist(twothree_twoouts_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror21<-sd(twothree_twoouts_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Runners on 2nd and 3rd, Two outs")))
+standarderror21
+#95% confidence intervals of the mean
+twothree_twoouts_runs_df1$ll<-mean(twothree_twoouts_runs_df1$runsReal,na.rm=T)-1.96*standarderror21
+twothree_twoouts_runs_df1$ul<-mean(twothree_twoouts_runs_df1$runsReal,na.rm=T)+1.96*standarderror21
+
+twothree_twoouts_runs_df1$ul[1]
+twothree_twoouts_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(twothree_twoouts_runs_df1$runsReal,na.r=T)-.251/(standarderror21)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#34
+
+```{r}
+
+library(dplyr)
+
+onetwothree_noouts_runs_df1<-season1[season1$base_state_before=="Bases Loaded, No outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onetwothree_noouts_runs_df1<- merge(onetwothree_noouts_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onetwothree_noouts_runs_df1$runsReal<-onetwothree_noouts_runs_df1$runs-onetwothree_noouts_runs_df1$runsbefore
+
+
+
+mean(onetwothree_noouts_runs_df1$runsReal,na.rm=T)
+table(onetwothree_noouts_runs_df1$runsReal)
+sum(onetwothree_noouts_runs_df1$runsReal)/length(onetwothree_noouts_runs_df1$runsReal)
+hist(onetwothree_noouts_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror22<-sd(onetwothree_noouts_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Bases Loaded, No outs")))
+standarderror22
+#95% confidence intervals of the mean
+onetwothree_noouts_runs_df1$ll<-mean(onetwothree_noouts_runs_df1$runsReal,na.rm=T)-1.96*standarderror22
+onetwothree_noouts_runs_df1$ul<-mean(onetwothree_noouts_runs_df1$runsReal,na.rm=T)+1.96*standarderror22
+
+onetwothree_noouts_runs_df1$ul[1]
+onetwothree_noouts_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onetwothree_noouts_runs_df1$runsReal,na.r=T)-.251/(standarderror22)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+#35
+
+```{r}
+
+library(dplyr)
+
+onetwothree_oneout_runs_df1<-season1[season1$base_state_before=="Bases Loaded, One out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onetwothree_oneout_runs_df1<- merge(onetwothree_oneout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onetwothree_oneout_runs_df1$runsReal<-onetwothree_oneout_runs_df1$runs-onetwothree_oneout_runs_df1$runsbefore
+
+
+
+mean(onetwothree_oneout_runs_df1$runsReal,na.rm=T)
+table(onetwothree_oneout_runs_df1$runsReal)
+sum(onetwothree_oneout_runs_df1$runsReal)/length(onetwothree_oneout_runs_df1$runsReal)
+hist(onetwothree_oneout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror23<-sd(onetwothree_oneout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Bases Loaded, One out")))
+standarderror23
+#95% confidence intervals of the mean
+onetwothree_oneout_runs_df1$ll<-mean(onetwothree_oneout_runs_df1$runsReal,na.rm=T)-1.96*standarderror23
+onetwothree_oneout_runs_df1$ul<-mean(onetwothree_oneout_runs_df1$runsReal,na.rm=T)+1.96*standarderror23
+
+onetwothree_oneout_runs_df1$ul[1]
+onetwothree_oneout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onetwothree_oneout_runs_df1$runsReal,na.r=T)-.251/(standarderror23)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+```
+
+
+#36
+
+```{r}
+
+library(dplyr)
+
+onetwothree_twoout_runs_df1<-season1[season1$base_state_before=="Bases Loaded, Two outs",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play, na.rm=T))
+                                                               
+onetwothree_twoout_runs_df1<- merge(onetwothree_twoout_runs_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+onetwothree_twoout_runs_df1$runsReal<-onetwothree_twoout_runs_df1$runs-onetwothree_twoout_runs_df1$runsbefore
+
+
+
+mean(onetwothree_twoout_runs_df1$runsReal,na.rm=T)
+table(onetwothree_twoout_runs_df1$runsReal)
+sum(onetwothree_twoout_runs_df1$runsReal)/length(onetwothree_twoout_runs_df1$runsReal)
+hist(onetwothree_twoout_runs_df1$runsReal)
+
+   
+   
+
+
+
+standarderror24<-sd(onetwothree_twoout_runs_df1$runsReal,na.rm=T)/sqrt(length(which(season1$base_state_before=="Bases Loaded, Two outs")))
+standarderror24
+#95% confidence intervals of the mean
+onetwothree_twoout_runs_df1$ll<-mean(onetwothree_twoout_runs_df1$runsReal,na.rm=T)-1.96*standarderror24
+onetwothree_twoout_runs_df1$ul<-mean(onetwothree_twoout_runs_df1$runsReal,na.rm=T)+1.96*standarderror24
+
+onetwothree_twoout_runs_df1$ul[1]
+onetwothree_twoout_runs_df1$ll[1]
+
+   
+
+   
+   
+
+mean(onetwothree_twoout_runs_df1$runsReal,na.r=T)-.251/(standarderror24)
+
+     
+
+
+   
+
+
+
+# The second element of the chart is .543 —  number cited in "The Book" is .297 for the MLB
+
+
+
+
+```
+
+
+#37
+
+```{r}
+
+
+
+season1$playType[grepl("[[:space:]]singled",season1$play)]<-"single"
+
+season1$playType[grepl("[[:space:]]doubled",season1$play)]<-"double"
+
+season1$playType[grepl("[[:space:]]tripled",season1$play)]<-"triple"
+
+season1$playType[grepl("[[:space:]]homered",season1$play)]<-"home run"
+season1$playType[grepl("[[:space:]]homered",season1$play)]<-"home run"
+season1$playType[grepl("[[:space:]]walked",season1$play)]<-"walk"
+
+season1$playType[grepl("[[:space:]]reached[[:space:]]on[[:space:]]an[[:space:]]error",season1$play)]<-"reached on error"
+season1$playType[grepl("[[:space:]]catcher's[[:space:]]interference",season1$play)]<-"catcher's interference"
+season1$playType[grepl("[[:space:]]passed[[:space:]]ball",season1$play)]<-"passed ball"
+season1$playType[grepl("[[:space:]]wild[[:space:]]pitch",season1$play)]<-"wild pitch"
+season1$playType[grepl("[[:space:]]hit[[:space:]]by[[:space:]]pitch",season1$play)]<-"hit by pitch"
+
+season1$playType[grepl("[[:space:]]stole[[:space:]]",season1$play)]<-"stolen base"
+
+
+season1$playType[grepl("[[:space:]]illegal[[:space:]]pitch",season1$play)]<-"illegal pitch"
+
+season1$playType[grepl("[[:space:]]SAC[[:space:]]bunt",season1$play)]<-"SAC bunt"
+
+
+
+table(season1$playType, season1$runs_from_play)
+
+
+
+```
+
+
+#38
+
+
+
+```{r}
+season1$runexp<-NA
+season1$runexp[season1$base_state_before=="Nobody on, No Outs"]<-.656
+season1$runexp[season1$base_state_before=="Nobody on, One out"]<-.31
+season1$runexp[season1$base_state_before=="Nobody on, Two outs"]<-.097
+
+season1$runexp[season1$base_state_before=="Runner on 1st, No outs"]<-1.1
+season1$runexp[season1$base_state_before=="Runner on 1st, One out"]<-.603
+season1$runexp[season1$base_state_before=="Runner on 1st, Two outs"]<-.23
+
+season1$runexp[season1$base_state_before=="Runner on 2nd, No outs"]<-1.395
+season1$runexp[season1$base_state_before=="Runner on 2nd, One out"]<-.770
+season1$runexp[season1$base_state_before=="Runner on 2nd, Two outs"]<-.301
+
+season1$runexp[season1$base_state_before=="Runner on 3rd, No outs"]<-1.517
+season1$runexp[season1$base_state_before=="Runner on 3rd, One out"]<-1.029
+season1$runexp[season1$base_state_before=="Runner on 3rd, Two outs"]<-.411
+
+season1$runexp[season1$base_state_before=="Runners on 1st and 2nd, No outs"]<-1.769
+season1$runexp[season1$base_state_before=="Runners on 1st and 2nd, One out"]<-1.052
+season1$runexp[season1$base_state_before=="Runners on 1st and 2nd, Two outs"]<-.454
+
+season1$runexp[season1$base_state_before=="Runners on 1st and 3rd, No outs"]<-1.948
+season1$runexp[season1$base_state_before=="Runners on 1st and 3rd, One out"]<-1.24
+season1$runexp[season1$base_state_before=="Runners on 1st and 3rd, Two outs"]<-.495
+
+season1$runexp[season1$base_state_before=="Runners on 2nd and 3rd, No outs"]<-2.089
+season1$runexp[season1$base_state_before=="Runners on 2nd and 3rd, One out"]<-1.336
+season1$runexp[season1$base_state_before=="Runners on 2nd and 3rd, Two outs"]<-.566
+
+season1$runexp[season1$base_state_before=="Bases Loaded, No outs"]<-2.294
+season1$runexp[season1$base_state_before=="Bases Loaded, One out"]<-1.506
+season1$runexp[season1$base_state_before=="Bases Loaded, Two outs"]<-.616
+
+mean(season1$runexp[season1$playType=="home run"],na.rm=T)
+mean(season1$runexp[season1$playType=="single"],na.rm=T)
+mean(season1$runexp[season1$playType=="double"],na.rm=T)
+mean(season1$runexp[season1$playType=="triple"],na.rm=T)
+mean(season1$runexp[season1$playType=="walk"],na.rm=T)
+mean(season1$runexp[season1$playType=="reached on error"],na.rm=T)
+mean(season1$runexp[season1$playType=="catcher's interference"],na.rm=T)
+mean(season1$runexp[season1$playType=="passed ball"],na.rm=T)
+mean(season1$runexp[season1$playType=="wild pitch"],na.rm=T)
+mean(season1$runexp[season1$playType=="illegal pitch"],na.rm=T)
+mean(season1$runexp[season1$playType=="stolen base"],na.rm=T)
+mean(season1$runexp[season1$playType=="hit by pitch"],na.rm=T)
+mean(season1$runexp[season1$playType=="SAC bunt"],na.rm=T)
+mean(season1$runexp[season1$playType=="bunt"],na.rm=T)
+mean(season1$runexp[season1$playType=="out"],na.rm=T)
+mean(season1$runexp[season1$playType=="stolen base"],na.rm=T)
+mean(season1$runexp[season1$playType=="strikeout"],na.rm=T)
+```
+
+#39
+
+```{r}
+
+#Home Run
+
+homerun_df1<-season1[season1$playType=="home run",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+homerun_df1<- merge(homerun_df1,runs_df1,all=TRUE,sort=FALSE)
+
+#Runs to the end of inning after a home run
+
+homerun_df1$runsReal<-homerun_df1$runs-homerun_df1$runsbefore
+
+#RTOE (average) of a HR
+
+mean(homerun_df1$runsReal,na.rm=T)
+
+standarderrorhomerun<-sd(homerun_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="home run")))
+  
+
+
+```
+
+
+#40
+
+```{r}
+
+single_df1<-season1[season1$playType=="single",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+single_df1<- merge(single_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+single_df1$runsReal<-single_df1$runs-single_df1$runsbefore
+
+
+
+mean(single_df1$runsReal,na.rm=T)
+hist(single_df1$runsReal)
+
+
+
+standarderrorsingle<-sd(single_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="single")))
+
+
+```
+
+#41
+```{r}
+
+double_df1<-season1[season1$playType=="double",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+double_df1<- merge(double_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+double_df1$runsReal<-double_df1$runs-double_df1$runsbefore
+
+
+
+mean(double_df1$runsReal,na.rm=T)
+standarderrordouble<-sd(double_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="double")))
+
+
+```
+
+#42
+
+```{r}
+
+triple_df1<-season1[season1$playType=="triple",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+triple_df1<- merge(triple_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+triple_df1$runsReal<-triple_df1$runs-triple_df1$runsbefore
+
+
+
+mean(triple_df1$runsReal,na.rm=T)
+
+standarderrortriple<-sd(triple_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="triple")))
+
+```
+
+#43
+```{r}
+
+walk_df1<-season1[season1$playType=="walk",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+walk_df1<- merge(walk_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+walk_df1$runsReal<-walk_df1$runs-walk_df1$runsbefore
+
+
+
+mean(walk_df1$runsReal,na.rm=T)
+
+standarderrorwalk<-sd(walk_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="walk")))
+
+```
+
+#44
+
+```{r}
+
+error_df1<-season1[season1$playType=="reached on error",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+error_df1<- merge(error_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+error_df1$runsReal<-error_df1$runs-error_df1$runsbefore
+
+
+
+mean(error_df1$runsReal,na.rm=T)
+
+standarderrorerror<-sd(error_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="reached on error")))
+standarderrorerror
+```
+
+#45
+
+```{r}
+
+interference_df1<-season1[season1$playType=="catcher's interference",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+interference_df1<- merge(interference_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+interference_df1$runsReal<-interference_df1$runs-interference_df1$runsbefore
+
+
+
+mean(interference_df1$runsReal,na.rm=T)
+
+standarderrorinterference<-sd(interference_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="catcher's interference")))
+
+```
+
+
+#46
+
+```{r}
+
+passedball_df1<-season1[season1$playType=="passed ball",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+passedball_df1<- merge(passedball_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+passedball_df1$runsReal<-passedball_df1$runs-passedball_df1$runsbefore
+
+
+
+mean(passedball_df1$runsReal,na.rm=T)
+
+standarderrorpassedball<-sd(passedball_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="passed ball")))
+
+```
+
+#47
+
+```{r}
+
+wildpitch_df1<-season1[season1$playType=="wild pitch",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+wildpitch_df1<- merge(wildpitch_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+wildpitch_df1$runsReal<-wildpitch_df1$runs-wildpitch_df1$runsbefore
+
+
+
+mean(wildpitch_df1$runsReal,na.rm=T)
+
+standarderrorwildpitch<-sd(passedball_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="wild pitch")))
+
+```
+
+#48
+
+```{r}
+
+illegalpitch_df1<-season1[season1$playType=="illegal pitch",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+illegalpitch_df1<- merge(illegalpitch_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+illegalpitch_df1$runsReal<-illegalpitch_df1$runs-illegalpitch_df1$runsbefore
+
+
+
+mean(illegalpitch_df1$runsReal,na.rm=T)
+
+standarderrorillegalpitch<-sd(illegalpitch_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="illegal pitch")))
+
+```
+
+#49
+
+```{r}
+
+steal_df1<-season1[season1$playType=="stolen base",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+steal_df1<- merge(steal_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+steal_df1$runsReal<-steal_df1$runs-steal_df1$runsbefore
+
+
+
+mean(steal_df1$runsReal,na.rm=T)
+
+standarderrorsteal<-sd(steal_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="stolen base")))
+
+```
+
+#50
+
+```{r}
+
+HBP_df1<-season1[season1$playType=="hit by pitch",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+HBP_df1<- merge(HBP_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+HBP_df1$runsReal<-HBP_df1$runs-HBP_df1$runsbefore
+
+
+
+mean(HBP_df1$runsReal,na.rm=T)
+
+standarderrorhitbypitch<-sd(HBP_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="hit by pitch")))
+
+```
+
+#51
+
+```{r}
+
+season1$playType[grepl("[[:space:]]SAC[[:space:]]bunt",season1$play)]<-"SAC bunt"
+
+
+SAC_df1<-season1[season1$playType=="SAC bunt",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+SAC_df1<- merge(SAC_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+SAC_df1$runsReal<-SAC_df1$runs-SAC_df1$runsbefore
+
+
+
+mean(SAC_df1$runsReal,na.rm=T)
+
+standarderrorSAC<-sd(SAC_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="SAC bunt")))
+
+```
+
+
+#52
+
+```{r}
+
+season1$playType[grepl("bunt",season1$play)]<-"bunt"
+
+bunt_df1<-season1[season1$playType=="bunt",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+bunt_df1<- merge(bunt_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+bunt_df1$runsReal<-bunt_df1$runs-bunt_df1$runsbefore
+
+
+
+mean(bunt_df1$runsReal,na.rm=T)
+
+standarderrorbunt<-sd(bunt_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="bunt")))
+
+```
+
+#53
+
+```{r}
+
+season1$playType[season1$outs_from_play==1]<-"out"
+
+out_df1<-season1[season1$playType=="out",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+out_df1<- merge(out_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+out_df1$runsReal<-out_df1$runs-out_df1$runsbefore
+
+
+mean(out_df1$runsReal,na.rm=T)
+
+standarderrorout<-sd(out_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="out")))
+
+
+```
+
+#54
+
+```{r}
+
+season1$playType[grepl("[[:space:]]struck[[:space:]]out",season1$play)]<-"strikeout"
+
+
+K_df1<-season1[season1$playType=="strikeout",] %>% dplyr::group_by(game_id,period_id,top_bottom) %>% 
+ dplyr::summarize(
+     runsbefore=mean(runs_before_play,na.rm=T))
+
+K_df1<- merge(K_df1,runs_df1,all=TRUE,sort=FALSE)
+
+
+
+K_df1$runsReal<-K_df1$runs-K_df1$runsbefore
+
+
+mean(K_df1$runsReal,na.rm=T)
+
+standarderrorK<-sd(K_df1$runsReal,na.rm=T)/sqrt(length(which(season1$playType=="strikeout")))

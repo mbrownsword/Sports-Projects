@@ -1,0 +1,614 @@
+---
+title: "Bullpen_fix"
+author: "Matt Brownsword"
+date: "3/29/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+SOXBP <- Bullpenfx("Red Sox")
+Bullpenfx_test <- function(team){
+
+ 
+MLBTeamKey <- read.csv("MLBteamkey.csv", colClasses = "character")
+teamabbrev <- MLBTeamKey$ESPNTEAM[MLBTeamKey$FANGRAPHSTEAM==team]
+firstname <- MLBTeamKey$ESPNTEAM[MLBTeamKey$firstteam==team]
+lastname <- MLBTeamKey$ESPNTEAM[MLBTeamKey$lastteam==team]
+bullpenurl <- paste0("http://www.espn.com/mlb/team/depth/_/name/",teamabbrev,"/",firstname,"-",lastname)
+webpagepen <- read_html(bullpenurl)
+tblspen <- webpagepen %>%
+        html_nodes(xpath='//table[@class="Table2__table-scroller Table2__table"]') %>% 
+        html_table(fill =TRUE)
+TeamDP <- tblspen[[1]]
+player <- c(TeamDP$Starter[2],TeamDP$`2nd`[2],TeamDP$`3rd`[2],TeamDP$`4th`[2],TeamDP$`5th`[2],TeamDP$Starter[3])
+playerID <- NA
+Bullpen <- data.frame(player,playerID)
+MLBmasterkey <- read.csv("MLBmasterkey.csv", colClasses = "character")
+Bullpen$playerID[1] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[1]]
+Bullpen$playerID[2] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[2]]
+Bullpen$playerID[3] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[3]]
+Bullpen$playerID[4] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[4]]
+Bullpen$playerID[5] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[5]]
+Bullpen$playerID[6] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[6]]
+
+#RelieverOne
+url <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[1],"&position=P&season=2018")
+webpagers <- read_html(url)
+tbls <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl2018 <- tbls[[1]]
+StndrdPtbl2018[is.na(StndrdPtbl2018)] <- 0
+url2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[1])
+webpagers2 <- read_html(url2)
+tbls2 <- webpagers2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngPtbl <- tbls2[[1]]
+FldngPtbl[is.na(FldngPtbl)] <- 0
+url3 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[1],"&position=P&season=2018")
+webpagers3 <- read_html(url3)
+tbls3<- webpagers3 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchPtbl <- tbls3[[1]]
+PtchPtbl[is.na(PtchPtbl)] <- 0
+url4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[1])
+webpagers4 <- read_html(url4)
+tbls4<- webpagers4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl <- tbls4[[1]]
+StndrdPtbl[is.na(StndrdPtbl)] <- 0
+PtchPtbl$Pitches <- as.numeric(PtchPtbl$Pitches)
+StndrdPtbl2018$SO <- as.numeric(StndrdPtbl2018$SO)
+StndrdPtbl2018$`2B` <- as.numeric(StndrdPtbl2018$`2B`)
+StndrdPtbl2018$`3B` <- as.numeric(StndrdPtbl2018$`3B`)
+StndrdPtbl2018$HR <- as.numeric(StndrdPtbl2018$HR)
+StndrdPtbl2018$H <- as.numeric(StndrdPtbl2018$H)
+StndrdPtbl$H <- as.numeric(StndrdPtbl$H)
+StndrdPtbl$SO <- as.numeric(StndrdPtbl$SO)
+StndrdPtbl$HR <- as.numeric(StndrdPtbl$HR)
+StndrdPtbl$WP <- as.numeric(StndrdPtbl$WP)
+StndrdPtbl$TBF <- as.numeric(StndrdPtbl$TBF)
+StndrdPtbl$BB <- as.numeric(StndrdPtbl$BB)
+StndrdPtbl$IBB <- as.numeric(StndrdPtbl$IBB)
+StndrdPtbl$HBP <- as.numeric(StndrdPtbl$HBP)
+StndrdPtbl$IP <- as.numeric(StndrdPtbl$IP)
+one <- matrix(0, 15, 1)
+dimnames(one)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR","Inn/G")
+dimnames(one)[[2]] <- 1
+  
+
+SB1 <- FldngPtbl$SB[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+CS1 <- FldngPtbl$CS[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+stay1 <- FldngPtbl$Inn[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]*1.44319
+WP1 <- StndrdPtbl$WP[StndrdPtbl$Team=="ZiPS"] 
+pitch1 <- PtchPtbl$Pitches[PtchPtbl$Handedness=="vs L"]+PtchPtbl$Pitches[PtchPtbl$Handedness=="vs R"] 
+K1 <- StndrdPtbl$SO[StndrdPtbl$Team=="ZiPS"] 
+BB1 <- StndrdPtbl$BB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$IBB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$HBP[StndrdPtbl$Team=="ZiPS"]
+HR1 <- StndrdPtbl$HR[StndrdPtbl$Team=="ZiPS"] 
+hit1 <- StndrdPtbl$H[StndrdPtbl$Team=="ZiPS"] + BB1
+contact1 <-  StndrdPtbl$TBF[StndrdPtbl$Team=="Steamer"] - K1
+out1 <- contact1 - hit1
+one["Inn/G",] <- StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]/StndrdPtbl$G[StndrdPtbl$Team=="ZiPS"]
+twoB1_placeholder <- StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs R"] 
+threeB1_placeholder <- StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs R"] 
+HR_placeholder <- StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs R"]
+oneB1_placeholder <- StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs R"] - HR_placeholder - threeB1_placeholder - twoB1_placeholder 
+
+oneb_weight <- oneB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+twob_weight <- twoB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+threeb_weight <- threeB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+
+oneB1 <- (hit1 - BB1 - HR1) * oneb_weight
+twoB1 <- (hit1 - BB1 - HR1) * twob_weight
+threeB1 <- (hit1 - BB1 - HR1) * threeb_weight
+
+
+one["SB",] <- SB1/(CS1+SB1+stay1)
+one["CS",] <- CS1/(CS1+SB1+stay1)
+one["stay",] <- stay1/(CS1+SB1+stay1)
+one["WP",] <- WP1/(pitch1+WP1)
+one["pitch",] <- pitch1/(pitch1+WP1)
+one["K",] <- K1/(K1+contact1)
+one["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["contact",] <-  contact1/(K1+contact1)
+one["hit",] <- hit1/(hit1+out1)
+one["out",] <- out1/(hit1+out1)
+
+
+#RelieverTwo
+url <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[2],"&position=P&season=2018")
+webpagers <- read_html(url)
+tbls <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl2018 <- tbls[[1]]
+StndrdPtbl2018[is.na(StndrdPtbl2018)] <- 0
+url2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[2])
+webpagers2 <- read_html(url2)
+tbls2 <- webpagers2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngPtbl <- tbls2[[1]]
+FldngPtbl[is.na(FldngPtbl)] <- 0
+url3 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[2],"&position=P&season=2018")
+webpagers3 <- read_html(url3)
+tbls3<- webpagers3 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchPtbl <- tbls3[[1]]
+PtchPtbl[is.na(PtchPtbl)] <- 0
+url4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[2])
+webpagers4 <- read_html(url4)
+tbls4<- webpagers4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl <- tbls4[[1]]
+StndrdPtbl[is.na(StndrdPtbl)] <- 0
+PtchPtbl$Pitches <- as.numeric(PtchPtbl$Pitches)
+StndrdPtbl2018$SO <- as.numeric(StndrdPtbl2018$SO)
+StndrdPtbl2018$`2B` <- as.numeric(StndrdPtbl2018$`2B`)
+StndrdPtbl2018$`3B` <- as.numeric(StndrdPtbl2018$`3B`)
+StndrdPtbl2018$HR <- as.numeric(StndrdPtbl2018$HR)
+StndrdPtbl2018$H <- as.numeric(StndrdPtbl2018$H)
+StndrdPtbl$H <- as.numeric(StndrdPtbl$H)
+StndrdPtbl$SO <- as.numeric(StndrdPtbl$SO)
+StndrdPtbl$HR <- as.numeric(StndrdPtbl$HR)
+StndrdPtbl$WP <- as.numeric(StndrdPtbl$WP)
+StndrdPtbl$TBF <- as.numeric(StndrdPtbl$TBF)
+StndrdPtbl$BB <- as.numeric(StndrdPtbl$BB)
+StndrdPtbl$IBB <- as.numeric(StndrdPtbl$IBB)
+StndrdPtbl$HBP <- as.numeric(StndrdPtbl$HBP)
+StndrdPtbl$IP <- as.numeric(StndrdPtbl$IP)
+two <- matrix(0, 15, 1)
+dimnames(two)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR","Inn/G")
+dimnames(two)[[2]] <- 1
+  
+
+SB1 <- FldngPtbl$SB[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+CS1 <- FldngPtbl$CS[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+stay1 <- FldngPtbl$Inn[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]*1.44319
+WP1 <- StndrdPtbl$WP[StndrdPtbl$Team=="ZiPS"] 
+pitch1 <- PtchPtbl$Pitches[PtchPtbl$Handedness=="vs L"]+PtchPtbl$Pitches[PtchPtbl$Handedness=="vs R"] 
+K1 <- StndrdPtbl$SO[StndrdPtbl$Team=="ZiPS"] 
+BB1 <- StndrdPtbl$BB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$IBB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$HBP[StndrdPtbl$Team=="ZiPS"]
+HR1 <- StndrdPtbl$HR[StndrdPtbl$Team=="ZiPS"] 
+hit1 <- StndrdPtbl$H[StndrdPtbl$Team=="ZiPS"] + BB1
+contact1 <-  StndrdPtbl$TBF[StndrdPtbl$Team=="Steamer"] - K1
+out1 <- contact1 - hit1
+two["Inn/G",] <- StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]/StndrdPtbl$G[StndrdPtbl$Team=="ZiPS"]
+twoB1_placeholder <- StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs R"] 
+threeB1_placeholder <- StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs R"] 
+HR_placeholder <- StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs R"]
+oneB1_placeholder <- StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs R"] - HR_placeholder - threeB1_placeholder - twoB1_placeholder 
+
+oneb_weight <- oneB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+twob_weight <- twoB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+threeb_weight <- threeB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+
+oneB1 <- (hit1 - BB1 - HR1) * oneb_weight
+twoB1 <- (hit1 - BB1 - HR1) * twob_weight
+threeB1 <- (hit1 - BB1 - HR1) * threeb_weight
+
+
+two["SB",] <- SB1/(CS1+SB1+stay1)
+two["CS",] <- CS1/(CS1+SB1+stay1)
+two["stay",] <- stay1/(CS1+SB1+stay1)
+two["WP",] <- WP1/(pitch1+WP1)
+two["pitch",] <- pitch1/(pitch1+WP1)
+two["K",] <- K1/(K1+contact1)
+two["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+two["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+two["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+two["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+two["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+two["contact",] <-  contact1/(K1+contact1)
+two["hit",] <- hit1/(hit1+out1)
+two["out",] <- out1/(hit1+out1)
+
+
+#RelieverThree
+url <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[3],"&position=P&season=2018")
+webpagers <- read_html(url)
+tbls <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl2018 <- tbls[[1]]
+StndrdPtbl2018[is.na(StndrdPtbl2018)] <- 0
+url2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[3])
+webpagers2 <- read_html(url2)
+tbls2 <- webpagers2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngPtbl <- tbls2[[1]]
+FldngPtbl[is.na(FldngPtbl)] <- 0
+url3 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[3],"&position=P&season=2018")
+webpagers3 <- read_html(url3)
+tbls3<- webpagers3 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchPtbl <- tbls3[[1]]
+PtchPtbl[is.na(PtchPtbl)] <- 0
+url4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[3])
+webpagers4 <- read_html(url4)
+tbls4<- webpagers4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl <- tbls4[[1]]
+StndrdPtbl[is.na(StndrdPtbl)] <- 0
+PtchPtbl$Pitches <- as.numeric(PtchPtbl$Pitches)
+StndrdPtbl2018$SO <- as.numeric(StndrdPtbl2018$SO)
+StndrdPtbl2018$`2B` <- as.numeric(StndrdPtbl2018$`2B`)
+StndrdPtbl2018$`3B` <- as.numeric(StndrdPtbl2018$`3B`)
+StndrdPtbl2018$HR <- as.numeric(StndrdPtbl2018$HR)
+StndrdPtbl2018$H <- as.numeric(StndrdPtbl2018$H)
+StndrdPtbl$H <- as.numeric(StndrdPtbl$H)
+StndrdPtbl$SO <- as.numeric(StndrdPtbl$SO)
+StndrdPtbl$HR <- as.numeric(StndrdPtbl$HR)
+StndrdPtbl$WP <- as.numeric(StndrdPtbl$WP)
+StndrdPtbl$TBF <- as.numeric(StndrdPtbl$TBF)
+StndrdPtbl$BB <- as.numeric(StndrdPtbl$BB)
+StndrdPtbl$IBB <- as.numeric(StndrdPtbl$IBB)
+StndrdPtbl$HBP <- as.numeric(StndrdPtbl$HBP)
+StndrdPtbl$IP <- as.numeric(StndrdPtbl$IP)
+three <- matrix(0, 15, 1)
+dimnames(three)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR","Inn/G")
+dimnames(three)[[2]] <- 1
+  
+
+SB1 <- FldngPtbl$SB[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+CS1 <- FldngPtbl$CS[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+stay1 <- FldngPtbl$Inn[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]*1.44319
+WP1 <- StndrdPtbl$WP[StndrdPtbl$Team=="ZiPS"] 
+pitch1 <- PtchPtbl$Pitches[PtchPtbl$Handedness=="vs L"]+PtchPtbl$Pitches[PtchPtbl$Handedness=="vs R"] 
+K1 <- StndrdPtbl$SO[StndrdPtbl$Team=="ZiPS"] 
+BB1 <- StndrdPtbl$BB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$IBB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$HBP[StndrdPtbl$Team=="ZiPS"]
+HR1 <- StndrdPtbl$HR[StndrdPtbl$Team=="ZiPS"] 
+hit1 <- StndrdPtbl$H[StndrdPtbl$Team=="ZiPS"] + BB1
+contact1 <-  StndrdPtbl$TBF[StndrdPtbl$Team=="Steamer"] - K1
+out1 <- contact1 - hit1
+three["Inn/G",] <- StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]/StndrdPtbl$G[StndrdPtbl$Team=="ZiPS"]
+twoB1_placeholder <- StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs R"] 
+threeB1_placeholder <- StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs R"] 
+HR_placeholder <- StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs R"]
+oneB1_placeholder <- StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs R"] - HR_placeholder - threeB1_placeholder - twoB1_placeholder 
+
+oneb_weight <- oneB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+twob_weight <- twoB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+threeb_weight <- threeB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+
+oneB1 <- (hit1 - BB1 - HR1) * oneb_weight
+twoB1 <- (hit1 - BB1 - HR1) * twob_weight
+threeB1 <- (hit1 - BB1 - HR1) * threeb_weight
+
+
+three["SB",] <- SB1/(CS1+SB1+stay1)
+three["CS",] <- CS1/(CS1+SB1+stay1)
+three["stay",] <- stay1/(CS1+SB1+stay1)
+three["WP",] <- WP1/(pitch1+WP1)
+three["pitch",] <- pitch1/(pitch1+WP1)
+three["K",] <- K1/(K1+contact1)
+three["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+three["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+three["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+three["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+three["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+three["contact",] <-  contact1/(K1+contact1)
+three["hit",] <- hit1/(hit1+out1)
+three["out",] <- out1/(hit1+out1)
+
+
+#RelieverFour
+url <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[4],"&position=P&season=2018")
+webpagers <- read_html(url)
+tbls <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl2018 <- tbls[[1]]
+StndrdPtbl2018[is.na(StndrdPtbl2018)] <- 0
+url2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[4])
+webpagers2 <- read_html(url2)
+tbls2 <- webpagers2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngPtbl <- tbls2[[1]]
+FldngPtbl[is.na(FldngPtbl)] <- 0
+url3 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[4],"&position=P&season=2018")
+webpagers3 <- read_html(url3)
+tbls3<- webpagers3 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchPtbl <- tbls3[[1]]
+PtchPtbl[is.na(PtchPtbl)] <- 0
+url4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[4])
+webpagers4 <- read_html(url4)
+tbls4<- webpagers4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl <- tbls4[[1]]
+StndrdPtbl[is.na(StndrdPtbl)] <- 0
+PtchPtbl$Pitches <- as.numeric(PtchPtbl$Pitches)
+StndrdPtbl2018$SO <- as.numeric(StndrdPtbl2018$SO)
+StndrdPtbl2018$`2B` <- as.numeric(StndrdPtbl2018$`2B`)
+StndrdPtbl2018$`3B` <- as.numeric(StndrdPtbl2018$`3B`)
+StndrdPtbl2018$HR <- as.numeric(StndrdPtbl2018$HR)
+StndrdPtbl2018$H <- as.numeric(StndrdPtbl2018$H)
+StndrdPtbl$H <- as.numeric(StndrdPtbl$H)
+StndrdPtbl$SO <- as.numeric(StndrdPtbl$SO)
+StndrdPtbl$HR <- as.numeric(StndrdPtbl$HR)
+StndrdPtbl$WP <- as.numeric(StndrdPtbl$WP)
+StndrdPtbl$TBF <- as.numeric(StndrdPtbl$TBF)
+StndrdPtbl$BB <- as.numeric(StndrdPtbl$BB)
+StndrdPtbl$IBB <- as.numeric(StndrdPtbl$IBB)
+StndrdPtbl$HBP <- as.numeric(StndrdPtbl$HBP)
+StndrdPtbl$IP <- as.numeric(StndrdPtbl$IP)
+four <- matrix(0, 15, 1)
+dimnames(four)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR","Inn/G")
+dimnames(four)[[2]] <- 1
+  
+
+SB1 <- FldngPtbl$SB[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+CS1 <- FldngPtbl$CS[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+stay1 <- FldngPtbl$Inn[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]*1.44319
+WP1 <- StndrdPtbl$WP[StndrdPtbl$Team=="ZiPS"] 
+pitch1 <- PtchPtbl$Pitches[PtchPtbl$Handedness=="vs L"]+PtchPtbl$Pitches[PtchPtbl$Handedness=="vs R"] 
+K1 <- StndrdPtbl$SO[StndrdPtbl$Team=="ZiPS"] 
+BB1 <- StndrdPtbl$BB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$IBB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$HBP[StndrdPtbl$Team=="ZiPS"]
+HR1 <- StndrdPtbl$HR[StndrdPtbl$Team=="ZiPS"] 
+hit1 <- StndrdPtbl$H[StndrdPtbl$Team=="ZiPS"] + BB1
+contact1 <-  StndrdPtbl$TBF[StndrdPtbl$Team=="Steamer"] - K1
+out1 <- contact1 - hit1
+four["Inn/G",] <- StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]/StndrdPtbl$G[StndrdPtbl$Team=="ZiPS"]
+twoB1_placeholder <- StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs R"] 
+threeB1_placeholder <- StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs R"] 
+HR_placeholder <- StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs R"]
+oneB1_placeholder <- StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs R"] - HR_placeholder - threeB1_placeholder - twoB1_placeholder 
+
+oneb_weight <- oneB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+twob_weight <- twoB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+threeb_weight <- threeB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+
+oneB1 <- (hit1 - BB1 - HR1) * oneb_weight
+twoB1 <- (hit1 - BB1 - HR1) * twob_weight
+threeB1 <- (hit1 - BB1 - HR1) * threeb_weight
+
+
+four["SB",] <- SB1/(CS1+SB1+stay1)
+four["CS",] <- CS1/(CS1+SB1+stay1)
+four["stay",] <- stay1/(CS1+SB1+stay1)
+four["WP",] <- WP1/(pitch1+WP1)
+four["pitch",] <- pitch1/(pitch1+WP1)
+four["K",] <- K1/(K1+contact1)
+four["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+four["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+four["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+four["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+four["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+four["contact",] <-  contact1/(K1+contact1)
+four["hit",] <- hit1/(hit1+out1)
+four["out",] <- out1/(hit1+out1)
+
+
+#RelieverFive
+url <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[5],"&position=P&season=2018")
+webpagers <- read_html(url)
+tbls <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl2018 <- tbls[[1]]
+StndrdPtbl2018[is.na(StndrdPtbl2018)] <- 0
+url2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[5])
+webpagers2 <- read_html(url2)
+tbls2 <- webpagers2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngPtbl <- tbls2[[1]]
+FldngPtbl[is.na(FldngPtbl)] <- 0
+url3 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[5],"&position=P&season=2018")
+webpagers3 <- read_html(url3)
+tbls3<- webpagers3 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchPtbl <- tbls3[[1]]
+PtchPtbl[is.na(PtchPtbl)] <- 0
+url4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[5])
+webpagers4 <- read_html(url4)
+tbls4<- webpagers4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl <- tbls4[[1]]
+StndrdPtbl[is.na(StndrdPtbl)] <- 0
+PtchPtbl$Pitches <- as.numeric(PtchPtbl$Pitches)
+StndrdPtbl2018$SO <- as.numeric(StndrdPtbl2018$SO)
+StndrdPtbl2018$`2B` <- as.numeric(StndrdPtbl2018$`2B`)
+StndrdPtbl2018$`3B` <- as.numeric(StndrdPtbl2018$`3B`)
+StndrdPtbl2018$HR <- as.numeric(StndrdPtbl2018$HR)
+StndrdPtbl2018$H <- as.numeric(StndrdPtbl2018$H)
+StndrdPtbl$H <- as.numeric(StndrdPtbl$H)
+StndrdPtbl$SO <- as.numeric(StndrdPtbl$SO)
+StndrdPtbl$HR <- as.numeric(StndrdPtbl$HR)
+StndrdPtbl$WP <- as.numeric(StndrdPtbl$WP)
+StndrdPtbl$TBF <- as.numeric(StndrdPtbl$TBF)
+StndrdPtbl$BB <- as.numeric(StndrdPtbl$BB)
+StndrdPtbl$IBB <- as.numeric(StndrdPtbl$IBB)
+StndrdPtbl$HBP <- as.numeric(StndrdPtbl$HBP)
+StndrdPtbl$IP <- as.numeric(StndrdPtbl$IP)
+five <- matrix(0, 15, 1)
+dimnames(five)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR","Inn/G")
+dimnames(five)[[2]] <- 1
+  
+
+SB1 <- FldngPtbl$SB[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+CS1 <- FldngPtbl$CS[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+stay1 <- FldngPtbl$Inn[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]*1.44319
+WP1 <- StndrdPtbl$WP[StndrdPtbl$Team=="ZiPS"] 
+pitch1 <- PtchPtbl$Pitches[PtchPtbl$Handedness=="vs L"]+PtchPtbl$Pitches[PtchPtbl$Handedness=="vs R"] 
+K1 <- StndrdPtbl$SO[StndrdPtbl$Team=="ZiPS"] 
+BB1 <- StndrdPtbl$BB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$IBB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$HBP[StndrdPtbl$Team=="ZiPS"]
+HR1 <- StndrdPtbl$HR[StndrdPtbl$Team=="ZiPS"] 
+hit1 <- StndrdPtbl$H[StndrdPtbl$Team=="ZiPS"] + BB1
+contact1 <-  StndrdPtbl$TBF[StndrdPtbl$Team=="Steamer"] - K1
+out1 <- contact1 - hit1
+five["Inn/G",] <- StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]/StndrdPtbl$G[StndrdPtbl$Team=="ZiPS"]
+twoB1_placeholder <- StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs R"] 
+threeB1_placeholder <- StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs R"] 
+HR_placeholder <- StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs R"]
+oneB1_placeholder <- StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs R"] - HR_placeholder - threeB1_placeholder - twoB1_placeholder 
+
+oneb_weight <- oneB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+twob_weight <- twoB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+threeb_weight <- threeB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+
+oneB1 <- (hit1 - BB1 - HR1) * oneb_weight
+twoB1 <- (hit1 - BB1 - HR1) * twob_weight
+threeB1 <- (hit1 - BB1 - HR1) * threeb_weight
+
+
+five["SB",] <- SB1/(CS1+SB1+stay1)
+five["CS",] <- CS1/(CS1+SB1+stay1)
+five["stay",] <- stay1/(CS1+SB1+stay1)
+five["WP",] <- WP1/(pitch1+WP1)
+five["pitch",] <- pitch1/(pitch1+WP1)
+five["K",] <- K1/(K1+contact1)
+five["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+five["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+five["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+five["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+five["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+five["contact",] <-  contact1/(K1+contact1)
+five["hit",] <- hit1/(hit1+out1)
+five["out",] <- out1/(hit1+out1)
+
+
+#RelieverSix
+url <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[6],"&position=P&season=2018")
+webpagers <- read_html(url)
+tbls <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl2018 <- tbls[[1]]
+StndrdPtbl2018[is.na(StndrdPtbl2018)] <- 0
+url2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[6])
+webpagers2 <- read_html(url2)
+tbls2 <- webpagers2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngPtbl <- tbls2[[1]]
+FldngPtbl[is.na(FldngPtbl)] <- 0
+url3 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[6],"&position=P&season=2018")
+webpagers3 <- read_html(url3)
+tbls3<- webpagers3 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchPtbl <- tbls3[[1]]
+PtchPtbl[is.na(PtchPtbl)] <- 0
+url4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[6])
+webpagers4 <- read_html(url4)
+tbls4<- webpagers4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl <- tbls4[[1]]
+StndrdPtbl[is.na(StndrdPtbl)] <- 0
+PtchPtbl$Pitches <- as.numeric(PtchPtbl$Pitches)
+StndrdPtbl2018$SO <- as.numeric(StndrdPtbl2018$SO)
+StndrdPtbl2018$`2B` <- as.numeric(StndrdPtbl2018$`2B`)
+StndrdPtbl2018$`3B` <- as.numeric(StndrdPtbl2018$`3B`)
+StndrdPtbl2018$HR <- as.numeric(StndrdPtbl2018$HR)
+StndrdPtbl2018$H <- as.numeric(StndrdPtbl2018$H)
+StndrdPtbl$H <- as.numeric(StndrdPtbl$H)
+StndrdPtbl$SO <- as.numeric(StndrdPtbl$SO)
+StndrdPtbl$HR <- as.numeric(StndrdPtbl$HR)
+StndrdPtbl$WP <- as.numeric(StndrdPtbl$WP)
+StndrdPtbl$TBF <- as.numeric(StndrdPtbl$TBF)
+StndrdPtbl$BB <- as.numeric(StndrdPtbl$BB)
+StndrdPtbl$IBB <- as.numeric(StndrdPtbl$IBB)
+StndrdPtbl$HBP <- as.numeric(StndrdPtbl$HBP)
+StndrdPtbl$IP <- as.numeric(StndrdPtbl$IP)
+
+six <- matrix(0, 15, 1)
+dimnames(six)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR","Inn/G")
+dimnames(six)[[2]] <- 1
+  
+
+SB1 <- FldngPtbl$SB[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+CS1 <- FldngPtbl$CS[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+stay1 <- FldngPtbl$Inn[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]*1.44319
+WP1 <- StndrdPtbl$WP[StndrdPtbl$Team=="ZiPS"] 
+pitch1 <- PtchPtbl$Pitches[PtchPtbl$Handedness=="vs L"]+PtchPtbl$Pitches[PtchPtbl$Handedness=="vs R"] 
+K1 <- StndrdPtbl$SO[StndrdPtbl$Team=="ZiPS"] 
+BB1 <- StndrdPtbl$BB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$IBB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$HBP[StndrdPtbl$Team=="ZiPS"]
+HR1 <- StndrdPtbl$HR[StndrdPtbl$Team=="ZiPS"] 
+hit1 <- StndrdPtbl$H[StndrdPtbl$Team=="ZiPS"] + BB1
+contact1 <-  StndrdPtbl$TBF[StndrdPtbl$Team=="Steamer"] - K1
+out1 <- contact1 - hit1
+six["Inn/G",] <- StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]/StndrdPtbl$G[StndrdPtbl$Team=="ZiPS"]
+twoB1_placeholder <- StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs R"] 
+threeB1_placeholder <- StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs R"] 
+HR_placeholder <- StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs R"]
+oneB1_placeholder <- StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs R"] - HR_placeholder - threeB1_placeholder - twoB1_placeholder 
+
+oneb_weight <- oneB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+twob_weight <- twoB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+threeb_weight <- threeB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+
+oneB1 <- (hit1 - BB1 - HR1) * oneb_weight
+twoB1 <- (hit1 - BB1 - HR1) * twob_weight
+threeB1 <- (hit1 - BB1 - HR1) * threeb_weight
+
+
+six["SB",] <- SB1/(CS1+SB1+stay1)
+six["CS",] <- CS1/(CS1+SB1+stay1)
+six["stay",] <- stay1/(CS1+SB1+stay1)
+six["WP",] <- WP1/(pitch1+WP1)
+six["pitch",] <- pitch1/(pitch1+WP1)
+six["K",] <- K1/(K1+contact1)
+six["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+six["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+six["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+six["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+six["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+six["contact",] <-  contact1/(K1+contact1)
+six["hit",] <- hit1/(hit1+out1)
+six["out",] <- out1/(hit1+out1)
+
+
+
+
+
+
+Bullpen <- list(one=one,two=two,three=three,four=four,five=five,six=six)
+}
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

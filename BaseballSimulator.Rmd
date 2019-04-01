@@ -1,0 +1,3155 @@
+---
+title: "MLBAttempts"
+author: "Matt Brownsword"
+date: "2/8/2019"
+output: html_document
+---
+
+#Installing Packages
+```{r}
+install.packages("textclean")
+install.packages("tools")
+library(textclean)
+library(data.table)
+library(flexdashboard)
+library(rvest)
+library(googlesheets)
+library(readxl)
+library(dplyr)
+library(raster)
+library(tidyverse)
+library(data.table)
+library(tools)
+```
+
+
+
+#Lineup to IDs
+```{r}
+Starters <- function(teamabbrev){
+
+MLBTeamKey <- read.csv("MLBteamKey.csv", colClasses = "character")
+url <- "https://www.mlb.com/starting-lineups"
+webpage <- read_html(url)
+startingpitchers <- webpage %>% html_nodes(xpath='//div[@class="starting-lineups__pitcher-name"]') %>% html_text()
+teamsplaying <- webpage %>% html_nodes(xpath='//a[@class="starting-lineups__team-name--link"]') %>% html_text()
+startingpitchers <- toTitleCase(strip(startingpitchers))
+teamsplaying <- toTitleCase(strip(teamsplaying))
+StartingLineups <- transpose(rbind.data.frame(startingpitchers, teamsplaying))
+StartingLineups$teamsplaying <- as.character(StartingLineups$V2)
+StartingLineups$startingpitchers <- as.character(StartingLineups$V1)
+MLBTeamKey$teamsplaying <- MLBTeamKey$FANGRAPHSTEAM
+MLBTeamKey$teamsplaying <- as.character(MLBTeamKey$teamsplaying)
+write.csv(StartingLineups, "StartingLineups.csv")
+StartingLineups<- inner_join(MLBTeamKey, StartingLineups)
+StartingLineups <- subset(StartingLineups, select=c(teamsplaying, ROTOWIRETEAM, startingpitchers))
+
+url1 <- "https://www.rotowire.com/baseball/daily-lineups.php"
+webber <- read_html(url1)
+lineups1 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[1]//a/@title') %>% html_text()
+positions1 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[1]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying1 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[1]//div[@class="lineup__abbr"]') %>% html_text()
+lineups1 <- split(lineups1, ceiling(seq_along(lineups1)/9))
+positions1 <- split(positions1, ceiling(seq_along(positions1)/9))
+lineups1 <- if(length(lineups1) != 0) {
+   data.frame(lineups1)
+   lineups1 <- transpose(lineups1)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions1 <- if(length(positions1) != 0) {
+   data.frame(positions1)
+   positions1 <- transpose(positions1)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying1 <- if(length(teamsplaying1) != 0) {
+   data.frame(teamsplaying1)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game1 <- data.frame(lineups1, positions1, teamsplaying1)
+game1$teamsplaying <- game1$teamsplaying1
+lineups2 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[2]//a/@title') %>% html_text()
+positions2 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[2]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying2 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[2]//div[@class="lineup__abbr"]') %>% html_text()
+lineups2 <- split(lineups2, ceiling(seq_along(lineups2)/9))
+positions2 <- split(positions2, ceiling(seq_along(positions2)/9))
+lineups2 <- if(length(lineups2) != 0) {
+   data.frame(lineups2)
+   lineups2 <- transpose(lineups2)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions2 <- if(length(positions2) != 0) {
+   data.frame(positions2)
+   positions2 <- transpose(positions2)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying2 <- if(length(teamsplaying2) != 0) {
+   data.frame(teamsplaying2)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game2 <- data.frame(lineups2, positions2, teamsplaying2)
+game2$teamsplaying <- game2$teamsplaying2
+lineups3 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[3]//a/@title') %>% html_text()
+positions3 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[3]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying3 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[3]//div[@class="lineup__abbr"]') %>% html_text()
+lineups3 <- split(lineups3, ceiling(seq_along(lineups3)/9))
+positions3 <- split(positions3, ceiling(seq_along(positions3)/9))
+lineups3 <- if(length(lineups3) != 0) {
+   data.frame(lineups3)
+   lineups3 <- transpose(lineups3)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions3 <- if(length(positions3) != 0) {
+   data.frame(positions3)
+   positions3 <- transpose(positions3)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying3 <- if(length(teamsplaying3) != 0) {
+   data.frame(teamsplaying3)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game3 <- data.frame(lineups3, positions3, teamsplaying3)
+game3$teamsplaying <- game3$teamsplaying3
+lineups4 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[4]//a/@title') %>% html_text()
+positions4 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[4]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying4 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[4]//div[@class="lineup__abbr"]') %>% html_text()
+lineups4 <- split(lineups4, ceiling(seq_along(lineups4)/9))
+positions4 <- split(positions4, ceiling(seq_along(positions4)/9))
+lineups4 <- if(length(lineups4) != 0) {
+   data.frame(lineups4)
+   lineups4 <- transpose(lineups4)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions4 <- if(length(positions4) != 0) {
+   data.frame(positions4)
+   positions4 <- transpose(positions4)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying4 <- if(length(teamsplaying4) != 0) {
+   data.frame(teamsplaying4)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game4 <- data.frame(lineups4, positions4, teamsplaying4)
+game4$teamsplaying <- game4$teamsplaying4
+lineups5 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[5]//a/@title') %>% html_text()
+positions5 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[5]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying5 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[5]//div[@class="lineup__abbr"]') %>% html_text()
+lineups5 <- split(lineups5, ceiling(seq_along(lineups5)/9))
+positions5 <- split(positions5, ceiling(seq_along(positions5)/9))
+lineups5 <- if(length(lineups5) != 0) {
+   data.frame(lineups5)
+   lineups5 <- transpose(lineups5)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions5 <- if(length(positions5) != 0) {
+   data.frame(positions5)
+   positions5 <- transpose(positions5)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying5 <- if(length(teamsplaying5) != 0) {
+   data.frame(teamsplaying5)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game5 <- data.frame(lineups5, positions5, teamsplaying5)
+game5$teamsplaying <- game5$teamsplaying5
+lineups6 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[6]//a/@title') %>% html_text()
+positions6 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[6]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying6 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[6]//div[@class="lineup__abbr"]') %>% html_text()
+lineups6 <- split(lineups6, ceiling(seq_along(lineups6)/9))
+positions6 <- split(positions6, ceiling(seq_along(positions6)/9))
+lineups6 <- if(length(lineups6) != 0) {
+   data.frame(lineups6)
+   lineups6 <- transpose(lineups6)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions6 <- if(length(positions6) != 0) {
+   data.frame(positions6)
+   positions6 <- transpose(positions6)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying6 <- if(length(teamsplaying6) != 0) {
+   data.frame(teamsplaying6)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game6 <- data.frame(lineups6, positions6, teamsplaying6)
+game6$teamsplaying <- game6$teamsplaying6
+lineups7 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[7]//a/@title') %>% html_text()
+positions7 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[7]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying7 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[7]//div[@class="lineup__abbr"]') %>% html_text()
+lineups7 <- split(lineups7, ceiling(seq_along(lineups7)/9))
+positions7 <- split(positions7, ceiling(seq_along(positions7)/9))
+lineups7 <- if(length(lineups7) != 0) {
+   data.frame(lineups7)
+   lineups7 <- transpose(lineups7)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions7 <- if(length(positions7) != 0) {
+   data.frame(positions7)
+   positions7 <- transpose(positions7)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying7 <- if(length(teamsplaying7) != 0) {
+   data.frame(teamsplaying7)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game7 <- data.frame(lineups7, positions7, teamsplaying7)
+game7$teamsplaying <- game7$teamsplaying7
+lineups8 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[8]//a/@title') %>% html_text()
+positions8 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[8]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying8 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[8]//div[@class="lineup__abbr"]') %>% html_text()
+lineups8 <- split(lineups8, ceiling(seq_along(lineups8)/9))
+positions8 <- split(positions8, ceiling(seq_along(positions8)/9))
+lineups8 <- if(length(lineups8) != 0) {
+   data.frame(lineups8)
+   lineups8 <- transpose(lineups8)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions8 <- if(length(positions8) != 0) {
+   data.frame(positions8)
+   positions8 <- transpose(positions8)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying8 <- if(length(teamsplaying8) != 0) {
+   data.frame(teamsplaying8)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game8 <- data.frame(lineups8, positions8, teamsplaying8)
+game8$teamsplaying <- game8$teamsplaying8
+lineups9 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[9]//a/@title') %>% html_text()
+positions9 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[9]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying9 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[9]//div[@class="lineup__abbr"]') %>% html_text()
+lineups9 <- split(lineups9, ceiling(seq_along(lineups9)/9))
+positions9 <- split(positions9, ceiling(seq_along(positions9)/9))
+lineups9 <- if(length(lineups9) != 0) {
+   data.frame(lineups9)
+   lineups9 <- transpose(lineups9)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions9 <- if(length(positions9) != 0) {
+   data.frame(positions9)
+   positions9 <- transpose(positions9)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying9 <- if(length(teamsplaying9) != 0) {
+   data.frame(teamsplaying9)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game9 <- data.frame(lineups9, positions9, teamsplaying9)
+game9$teamsplaying <- game9$teamsplaying9
+lineups10 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[10]//a/@title') %>% html_text()
+positions10 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[10]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying10 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[10]//div[@class="lineup__abbr"]') %>% html_text()
+lineups10 <- split(lineups10, ceiling(seq_along(lineups10)/9))
+positions10 <- split(positions10, ceiling(seq_along(positions10)/9))
+lineups10 <- if(length(lineups10) != 0) {
+   data.frame(lineups10)
+   lineups10 <- transpose(lineups10)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions10 <- if(length(positions10) != 0) {
+   data.frame(positions10)
+   positions10 <- transpose(positions10)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying10 <- if(length(teamsplaying10) != 0) {
+   data.frame(teamsplaying10)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game10 <- data.frame(lineups10, positions10, teamsplaying10)
+game10$teamsplaying <- game10$teamsplaying10
+lineups11 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[11]//a/@title') %>% html_text()
+positions11 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[11]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying11 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[11]//div[@class="lineup__abbr"]') %>% html_text()
+lineups11 <- split(lineups11, ceiling(seq_along(lineups11)/9))
+positions11 <- split(positions11, ceiling(seq_along(positions11)/9))
+lineups11 <- if(length(lineups11) != 0) {
+   data.frame(lineups11)
+   lineups11 <- transpose(lineups11)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions11 <- if(length(positions11) != 0) {
+   data.frame(positions11)
+   positions11 <- transpose(positions11)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying11 <- if(length(teamsplaying11) != 0) {
+   data.frame(teamsplaying11)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game11 <- data.frame(lineups11, positions11, teamsplaying11)
+game11$teamsplaying <- game11$teamsplaying11
+lineups12 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[12]//a/@title') %>% html_text()
+positions12 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[12]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying12 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[12]//div[@class="lineup__abbr"]') %>% html_text()
+lineups12 <- split(lineups12, ceiling(seq_along(lineups12)/9))
+positions12 <- split(positions12, ceiling(seq_along(positions12)/9))
+lineups12 <- if(length(lineups12) != 0) {
+   data.frame(lineups12)
+   lineups12 <- transpose(lineups12)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions12 <- if(length(positions12) != 0) {
+   data.frame(positions12)
+   positions12 <- transpose(positions12)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying12 <- if(length(teamsplaying12) != 0) {
+   data.frame(teamsplaying12)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game12 <- data.frame(lineups12, positions12, teamsplaying12)
+game12$teamsplaying <- game12$teamsplaying12
+lineups13 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[13]//a/@title') %>% html_text()
+positions13 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[13]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying13 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[13]//div[@class="lineup__abbr"]') %>% html_text()
+lineups13 <- split(lineups13, ceiling(seq_along(lineups13)/9))
+positions13 <- split(positions13, ceiling(seq_along(positions13)/9))
+lineups13 <- if(length(lineups13) != 0) {
+   data.frame(lineups13)
+   lineups13 <- transpose(lineups13)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions13 <- if(length(positions13) != 0) {
+   data.frame(positions13)
+   positions13 <- transpose(positions13)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying13 <- if(length(teamsplaying13) != 0) {
+   data.frame(teamsplaying13)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game13 <- data.frame(lineups13, positions13, teamsplaying13)
+game13$teamsplaying <- game13$teamsplaying13
+lineups14 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[14]//a/@title') %>% html_text()
+positions14 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[14]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying14 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[14]//div[@class="lineup__abbr"]') %>% html_text()
+lineups14 <- split(lineups14, ceiling(seq_along(lineups14)/9))
+positions14 <- split(positions14, ceiling(seq_along(positions14)/9))
+if(length(lineups14) != 0) {
+  lineups14 <-  data.frame(lineups14)
+  lineups14 <- transpose(lineups14)
+    }else{
+    lineups14 <-  list(matrix(NA, 2, 9))
+  }
+if(length(positions14) != 0) {
+  positions14 <-  data.frame(positions14)
+  positions14 <- transpose(positions14)
+    }else{
+   positions14 <-   list(matrix(NA, 2, 9))
+    }
+teamsplaying14 <- if(length(teamsplaying14) != 0) {
+   data.frame(teamsplaying14)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game14 <- data.frame(lineups14, positions14, teamsplaying14)
+game14$teamsplaying <- game14$teamsplaying14
+lineups15 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[15]//a/@title') %>% html_text()
+positions15 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[15]//div[@class="lineup__pos"]') %>% html_text()
+teamsplaying15 <- webber %>% html_nodes(xpath='(//div[@class="lineup__box"])[15]//div[@class="lineup__abbr"]') %>% html_text()
+lineups15 <- split(lineups15, ceiling(seq_along(lineups15)/9))
+positions15 <- split(positions15, ceiling(seq_along(positions15)/9))
+lineups15 <- if(length(lineups15) !=0) {
+   data.frame(lineups15)
+   lineups15 <- transpose(lineups15)
+    }else{
+     list(matrix(NA, 2, 9))
+  }
+positions15 <- if(length(positions15) !=0) {
+   data.frame(positions15)
+   positions15 <- transpose(positions15)
+    }else{
+     list(matrix(NA, 2, 9))
+    }
+teamsplaying15 <- if(length(teamsplaying15) != 0) {
+   data.frame(teamsplaying15)
+    }else{
+     list(matrix(NA, 2, 2))
+  }
+game15 <- data.frame(lineups15, positions15, teamsplaying15)
+game15$teamsplaying <- game15$teamsplaying15
+
+names(game1) <- c("V1","V2","V3","V4","V5","V6","V7","V8","V9","V1.1","V2.1","V3.1","V4.1","V5.1","V6.1","V7.1","V8.1","V9.1","teamsplaying1","teamsplaying")
+names(game2) <- names(game1)
+names(game3) <- names(game1)
+names(game4) <- names(game1)
+names(game5) <- names(game1)
+names(game6) <- names(game1)
+names(game7) <- names(game1)
+names(game8) <- names(game1)
+names(game9) <- names(game1)
+names(game10) <- names(game1)
+names(game11) <- names(game1)
+names(game12) <- names(game1)
+names(game13) <- names(game1)
+names(game14) <- names(game1)
+names(game15) <- names(game1)
+
+lineups <- rbind.data.frame(game1,game2,game3,game4,game5,game6,game7,game8,game9,game10,game11,game12,game13,game14,game15)
+
+lineups$ROTOWIRETEAM <- as.character(lineups$teamsplaying)
+lineups$V1 <- as.character(lineups$V1)
+lineups$V2 <- as.character(lineups$V2)
+lineups$V3 <- as.character(lineups$V3)
+lineups$V4 <- as.character(lineups$V4)
+lineups$V5 <- as.character(lineups$V5)
+lineups$V6 <- as.character(lineups$V6)
+lineups$V7 <- as.character(lineups$V7)
+lineups$V8 <- as.character(lineups$V8)
+lineups$V9 <- as.character(lineups$V9)
+TodaysLineups <- inner_join(StartingLineups, lineups, by = "ROTOWIRETEAM")
+
+whatever <- TodaysLineups[TodaysLineups$teamsplaying.x==teamabbrev, ][1,]
+}
+
+```
+
+
+###Catcher
+
+```{r}
+Catcherfx <- function(teamlineups){
+player <- NA
+playerID <- NA
+Catcher <- data.frame(player,playerID)
+if (teamlineups$V1.1=="C") Catcher$player <- teamlineups$V1
+if (teamlineups$V2.1=="C") Catcher$player <- teamlineups$V2
+if (teamlineups$V3.1=="C") Catcher$player <- teamlineups$V3
+if (teamlineups$V4.1=="C") Catcher$player <- teamlineups$V4
+if (teamlineups$V5.1=="C") Catcher$player <- teamlineups$V5
+if (teamlineups$V6.1=="C") Catcher$player <- teamlineups$V6
+if (teamlineups$V7.1=="C") Catcher$player <- teamlineups$V7
+if (teamlineups$V8.1=="C") Catcher$player <- teamlineups$V8
+if (teamlineups$V9.1=="C") Catcher$player <- teamlineups$V9
+MLBmasterkey <- read.csv("MLBmasterkey.csv", colClasses = "character")
+
+Catcher$playerID <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Catcher$player]
+url <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Catcher$playerID)
+webpager <- read_html(url)
+tbls <- webpager %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+Fldngtbl <- tbls[[1]]
+Fldngtbl[is.na(Fldngtbl)] <- 0
+
+one <- matrix(0, 5, 1)
+dimnames(one)[[1]] <- c("SB", "stay", "CS",
+                       "PB", "pitch")
+dimnames(one)[[2]] <- 1
+SB1 <- sum(Fldngtbl$SB[Fldngtbl$Season!="Total"&Fldngtbl$Pos=="C"])
+CS1 <- sum(Fldngtbl$CS[Fldngtbl$Season!="Total"&Fldngtbl$Pos=="C"])
+PB1 <- sum(Fldngtbl$PB[Fldngtbl$Season!="Total"&Fldngtbl$Pos=="C"])
+stay1 <- sum(Fldngtbl$Inn[Fldngtbl$Season!="Total"&Fldngtbl$Pos=="C"])*1.44319
+pitch1 <- sum(Fldngtbl$Inn[Fldngtbl$Season!="Total"&Fldngtbl$Pos=="C"])*16.58
+
+one["SB",] <- SB1/(SB1+CS1+stay1)
+one["CS",] <- CS1/(SB1+CS1+stay1)
+one["stay",] <- stay1/(SB1+CS1+stay1)
+one["PB",] <- PB1/(PB1+pitch1)
+one["pitch",] <- pitch1/(PB1+pitch1)
+
+
+Catcher <- list(one=one)
+}
+
+```
+
+
+###Starting Pitcher
+
+```{r}
+
+SPfx <- function(teamlineups){
+player <- NA
+playerID <- NA
+StartingPitcher <- data.frame(player,playerID)
+StartingPitcher$player <- Athletics$startingpitchers
+MLBmasterkey <- read.csv("MLBmasterkey.csv", colClasses = "character")
+StartingPitcher$playerID <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==StartingPitcher$player]
+url <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",StartingPitcher$playerID,"&position=P&season=0")
+webpagers <- read_html(url)
+tbls <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl2018 <- tbls[[1]]
+StndrdPtbl2018[is.na(StndrdPtbl2018)] <- 0
+url2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",StartingPitcher$playerID)
+webpagers2 <- read_html(url2)
+tbls2 <- webpagers2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngPtbl <- tbls2[[1]]
+FldngPtbl[is.na(FldngPtbl)] <- 0
+url3 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",StartingPitcher$playerID,"&position=P&season=0")
+webpagers3 <- read_html(url3)
+tbls3<- webpagers3 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchPtbl <- tbls3[[1]]
+PtchPtbl[is.na(PtchPtbl)] <- 0
+url4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",StartingPitcher$playerID)
+webpagers4 <- read_html(url4)
+tbls4<- webpagers4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdPtbl <- tbls4[[1]]
+StndrdPtbl[is.na(StndrdPtbl)] <- 0
+PtchPtbl$Pitches <- as.numeric(PtchPtbl$Pitches)
+StndrdPtbl2018$SO <- as.numeric(StndrdPtbl2018$SO)
+StndrdPtbl2018$`2B` <- as.numeric(StndrdPtbl2018$`2B`)
+StndrdPtbl2018$`3B` <- as.numeric(StndrdPtbl2018$`3B`)
+StndrdPtbl2018$HR <- as.numeric(StndrdPtbl2018$HR)
+StndrdPtbl2018$H <- as.numeric(StndrdPtbl2018$H)
+StndrdPtbl$H <- as.numeric(StndrdPtbl$H)
+StndrdPtbl$SO <- as.numeric(StndrdPtbl$SO)
+StndrdPtbl$HR <- as.numeric(StndrdPtbl$HR)
+StndrdPtbl$WP <- as.numeric(StndrdPtbl$WP)
+StndrdPtbl$TBF <- as.numeric(StndrdPtbl$TBF)
+StndrdPtbl$BB <- as.numeric(StndrdPtbl$BB)
+StndrdPtbl$IBB <- as.numeric(StndrdPtbl$IBB)
+StndrdPtbl$HBP <- as.numeric(StndrdPtbl$HBP)
+StndrdPtbl$IP <- as.numeric(StndrdPtbl$IP)
+StndrdPtbl$Season <- as.numeric(StndrdPtbl$Season)
+one <- matrix(0, 15, 1)
+dimnames(one)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR","Inn/G")
+  dimnames(one)[[2]] <- 1
+  
+
+SB1 <- FldngPtbl$SB[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+CS1 <- FldngPtbl$CS[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]
+stay1 <- FldngPtbl$Inn[FldngPtbl$Season=="Total"&FldngPtbl$Pos=="P"]*1.44319
+WP1 <- StndrdPtbl$WP[StndrdPtbl$Team=="ZiPS"] 
+pitch1 <- PtchPtbl$Pitches[PtchPtbl$Handedness=="vs L"]+PtchPtbl$Pitches[PtchPtbl$Handedness=="vs R"] 
+K1 <- StndrdPtbl$SO[StndrdPtbl$Team=="ZiPS"] 
+BB1 <- StndrdPtbl$BB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$IBB[StndrdPtbl$Team=="ZiPS"] + StndrdPtbl$HBP[StndrdPtbl$Team=="ZiPS"]
+HR1 <- StndrdPtbl$HR[StndrdPtbl$Team=="ZiPS"] 
+hit1 <- StndrdPtbl$H[StndrdPtbl$Team=="ZiPS"] + BB1
+contact1 <-  StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]*(StndrdPtbl$TBF[StndrdPtbl$Season==2018][1]/StndrdPtbl$IP[StndrdPtbl$Season==2018][1]) - K1
+out1 <- contact1 - hit1
+one["Inn/G",] <- StndrdPtbl$IP[StndrdPtbl$Team=="ZiPS"]/StndrdPtbl$G[StndrdPtbl$Team=="ZiPS"]
+twoB1_placeholder <- StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`2B`[StndrdPtbl2018$Handedness=="vs R"] 
+threeB1_placeholder <- StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$`3B`[StndrdPtbl2018$Handedness=="vs R"] 
+HR_placeholder <- StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$HR[StndrdPtbl2018$Handedness=="vs R"]
+oneB1_placeholder <- StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs L"]+StndrdPtbl2018$H[StndrdPtbl2018$Handedness=="vs R"] - HR_placeholder - threeB1_placeholder - twoB1_placeholder 
+
+oneb_weight <- oneB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+twob_weight <- twoB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+threeb_weight <- threeB1_placeholder / (oneB1_placeholder+threeB1_placeholder+twoB1_placeholder)
+
+if (threeb_weight==0){
+  oneb_weight <- .74
+  twob_weight <- .23
+  threeb_weight <- .03
+}
+
+oneB1 <- (hit1 - BB1 - HR1) * oneb_weight
+twoB1 <- (hit1 - BB1 - HR1) * twob_weight
+threeB1 <- (hit1 - BB1 - HR1) * threeb_weight
+
+
+one["SB",] <- SB1/(CS1+SB1+stay1)
+one["CS",] <- CS1/(CS1+SB1+stay1)
+one["stay",] <- stay1/(CS1+SB1+stay1)
+one["WP",] <- WP1/(pitch1+WP1)
+one["pitch",] <- pitch1/(pitch1+WP1)
+one["K",] <- K1/(K1+contact1)
+one["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["contact",] <-  contact1/(K1+contact1)
+one["hit",] <- hit1/(hit1+out1)
+one["out",] <- out1/(hit1+out1)
+
+StartingPitcher <- list(one=one)
+}
+
+```
+
+
+###Batting Order
+
+```{r}
+
+Angels <- Starters("Angels")
+Athletics <- Starters("Athletics")
+angsp <- SPfx(Angels)
+oaksp <- SPfx(Athletics)
+angsp
+oaksp
+
+
+
+BOfx <- function(teamlineups){
+player <- c(teamlineups$V1, teamlineups$V2, teamlineups$V3, teamlineups$V4, teamlineups$V5, teamlineups$V6, teamlineups$V7, teamlineups$V8, teamlineups$V9)
+playerID <- c(NA, NA, NA, NA, NA, NA, NA, NA, NA)
+BattingOrder <- data.frame(player,playerID)
+MLBmasterkey <- read.csv("MLBmasterkey.csv", colClasses = "character")
+BattingOrder$playerID[1] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[1]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[2] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[2]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[3] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[3]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[4] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[4]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[5] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[5]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[6] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[6]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[7] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[7]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[8] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[8]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+BattingOrder$playerID[9] <- MLBmasterkey$fg_id[MLBmasterkey$fg_name==BattingOrder$player[9]&teamlineups$ROTOWIRETEAM==MLBmasterkey$mlb_team]
+#Player one
+urlp1 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[1])
+webpagersp1 <- read_html(urlp1)
+tblsp1 <- webpagersp1 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl1 <- tblsp1[[1]]
+StndrdBtbl1[is.na(StndrdBtbl1)] <- 0
+StndrdBtbl1$PA <- as.numeric(StndrdBtbl1$PA)
+StndrdBtbl1$AB <- as.numeric(StndrdBtbl1$AB)
+StndrdBtbl1$SO <- as.numeric(StndrdBtbl1$SO)
+StndrdBtbl1$`1B` <- as.numeric(StndrdBtbl1$`1B`)
+StndrdBtbl1$`2B` <- as.numeric(StndrdBtbl1$`2B`)
+StndrdBtbl1$`3B` <- as.numeric(StndrdBtbl1$`3B`)
+StndrdBtbl1$H <- as.numeric(StndrdBtbl1$H)
+StndrdBtbl1$BB <- as.numeric(StndrdBtbl1$BB)
+StndrdBtbl1$IBB <- as.numeric(StndrdBtbl1$IBB)
+StndrdBtbl1$HBP <- as.numeric(StndrdBtbl1$HBP)
+StndrdBtbl1$HR <- as.numeric(StndrdBtbl1$HR)
+StndrdBtbl1$SF <- as.numeric(StndrdBtbl1$SF)
+StndrdBtbl1$SH <- as.numeric(StndrdBtbl1$SH)
+StndrdBtbl1$GDP <- as.numeric(StndrdBtbl1$GDP)
+StndrdBtbl1$SB <- as.numeric(StndrdBtbl1$SB)
+StndrdBtbl1$CS <- as.numeric(StndrdBtbl1$CS)
+one <- matrix(0, 16, 1)
+dimnames(one)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(one)[[2]] <- 1
+  
+if (length(StndrdBtbl1$AB[StndrdBtbl1$Team=="ZiPS"])==1){
+SB1 <- StndrdBtbl1$SB[StndrdBtbl1$Team=="ZiPS"]
+CS1 <- StndrdBtbl1$CS[StndrdBtbl1$Team=="ZiPS"]
+stay1 <- StndrdBtbl1$AB[StndrdBtbl1$Team=="ZiPS"]*.400-StndrdBtbl1$CS[StndrdBtbl1$Team=="ZiPS"]-StndrdBtbl1$SB[StndrdBtbl1$Team=="ZiPS"]
+K1 <- StndrdBtbl1$SO[StndrdBtbl1$Team=="ZiPS"]
+contact1 <-  StndrdBtbl1$PA[StndrdBtbl1$Team=="ZiPS"] - K1
+GIDP1 <- StndrdBtbl1$GDP[StndrdBtbl1$Team=="ZiPS"]
+SFSH1 <- StndrdBtbl1$SF[StndrdBtbl1$Team=="ZiPS"]+StndrdBtbl1$SH[StndrdBtbl1$Team=="ZiPS"]
+outorhit1 <- contact1 - GIDP1 - SFSH1
+twoB1 <- StndrdBtbl1$`2B`[StndrdBtbl1$Team=="ZiPS"]
+threeB1 <- StndrdBtbl1$`3B`[StndrdBtbl1$Team=="ZiPS"]
+HR1 <- StndrdBtbl1$HR[StndrdBtbl1$Team=="ZiPS"]
+oneB1 <- StndrdBtbl1$`1B`[StndrdBtbl1$Team=="ZiPS"]
+BB1 <- StndrdBtbl1$BB[StndrdBtbl1$Team=="ZiPS"]+StndrdBtbl1$IBB[StndrdBtbl1$Team=="ZiPS"]+StndrdBtbl1$HBP[StndrdBtbl1$Team=="ZiPS"]
+hit1 <- twoB1 + oneB1 + threeB1 + HR1 + BB1 
+out1 <- outorhit1 - hit1
+ROE1 <-  StndrdBtbl1$AB[StndrdBtbl1$Team=="ZiPS"] - K1 - twoB1 - threeB1-HR1 -oneB1- out1 - GIDP1
+}else{
+SB1 <- StndrdBtbl1$SB[StndrdBtbl1$Season=="Total"]
+CS1 <- StndrdBtbl1$CS[StndrdBtbl1$Season=="Total"]
+stay1 <- StndrdBtbl1$AB[StndrdBtbl1$Season=="Total"]*.400-StndrdBtbl1$CS[StndrdBtbl1$Season=="Total"]-StndrdBtbl1$SB[StndrdBtbl1$Season=="Total"]
+K1 <- StndrdBtbl1$SO[StndrdBtbl1$Season=="Total"]
+contact1 <-  StndrdBtbl1$PA[StndrdBtbl1$Season=="Total"] - K1
+GIDP1 <- StndrdBtbl1$GDP[StndrdBtbl1$Season=="Total"]
+SFSH1 <- StndrdBtbl1$SF[StndrdBtbl1$Season=="Total"]+StndrdBtbl1$SH[StndrdBtbl1$Season=="Total"]
+outorhit1 <- contact1 - GIDP1 - SFSH1
+twoB1 <- StndrdBtbl1$`2B`[StndrdBtbl1$Season=="Total"]
+threeB1 <- StndrdBtbl1$`3B`[StndrdBtbl1$Season=="Total"]
+HR1 <- StndrdBtbl1$HR[StndrdBtbl1$Season=="Total"]
+oneB1 <- StndrdBtbl1$`1B`[StndrdBtbl1$Season=="Total"]
+BB1 <- StndrdBtbl1$BB[StndrdBtbl1$Season=="Total"]+StndrdBtbl1$IBB[StndrdBtbl1$Season=="Total"]+StndrdBtbl1$HBP[StndrdBtbl1$Season=="Total"]
+hit1 <-  twoB1 + oneB1 + threeB1 + HR1 + BB1 
+out1 <- outorhit1 - hit1
+ROE1 <-  StndrdBtbl1$AB[StndrdBtbl1$Season=="Total"] - K1 - twoB1 - threeB1-HR1 -oneB1- out1 - GIDP1
+
+
+
+
+
+}
+
+one["SB",] <- SB1/(CS1+SB1+stay1)
+one["CS",] <- CS1/(CS1+SB1+stay1)
+one["stay",] <- stay1/(CS1+SB1+stay1)
+one["GIDP",] <- GIDP1/(GIDP1+SFSH1+outorhit1)
+one["SFSH",] <- SFSH1/(GIDP1+SFSH1+outorhit1)
+one["outorhit",] <- outorhit1/(GIDP1+SFSH1+outorhit1)
+one["K",] <- K1/(K1+contact1)
+one["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["contact",] <-  contact1/(K1+contact1)
+one["hit",] <- hit1/(hit1+out1)
+one["out",] <- out1/(hit1+out1)
+
+
+
+
+#Player two
+urlp2 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[2])
+webpagersp2 <- read_html(urlp2)
+tblsp2 <- webpagersp2 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl2 <- tblsp2[[1]]
+StndrdBtbl2[is.na(StndrdBtbl2)] <- 0
+StndrdBtbl2$PA <- as.numeric(StndrdBtbl2$PA)
+StndrdBtbl2$AB <- as.numeric(StndrdBtbl2$AB)
+StndrdBtbl2$SO <- as.numeric(StndrdBtbl2$SO)
+StndrdBtbl2$`1B` <- as.numeric(StndrdBtbl2$`1B`)
+StndrdBtbl2$`2B` <- as.numeric(StndrdBtbl2$`2B`)
+StndrdBtbl2$`3B` <- as.numeric(StndrdBtbl2$`3B`)
+StndrdBtbl2$H <- as.numeric(StndrdBtbl2$H)
+StndrdBtbl2$BB <- as.numeric(StndrdBtbl2$BB)
+StndrdBtbl2$IBB <- as.numeric(StndrdBtbl2$IBB)
+StndrdBtbl2$HBP <- as.numeric(StndrdBtbl2$HBP)
+StndrdBtbl2$HR <- as.numeric(StndrdBtbl2$HR)
+StndrdBtbl2$SF <- as.numeric(StndrdBtbl2$SF)
+StndrdBtbl2$SH <- as.numeric(StndrdBtbl2$SH)
+StndrdBtbl2$GDP <- as.numeric(StndrdBtbl2$GDP)
+StndrdBtbl2$SB <- as.numeric(StndrdBtbl2$SB)
+StndrdBtbl2$CS <- as.numeric(StndrdBtbl2$CS)
+two <- matrix(0, 16, 1)
+dimnames(two)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(two)[[2]] <- 1
+  
+
+if (length(StndrdBtbl2$AB[StndrdBtbl2$Team=="ZiPS"])==1){
+SB2 <- StndrdBtbl2$SB[StndrdBtbl2$Team=="ZiPS"]
+CS2 <- StndrdBtbl2$CS[StndrdBtbl2$Team=="ZiPS"]
+stay2 <- StndrdBtbl2$AB[StndrdBtbl2$Team=="ZiPS"]*.400-StndrdBtbl2$CS[StndrdBtbl2$Team=="ZiPS"]-StndrdBtbl2$SB[StndrdBtbl2$Team=="ZiPS"]
+K2 <- StndrdBtbl2$SO[StndrdBtbl2$Team=="ZiPS"]
+contact2 <-  StndrdBtbl2$PA[StndrdBtbl2$Team=="ZiPS"] - K2
+GIDP2 <- StndrdBtbl2$GDP[StndrdBtbl2$Team=="ZiPS"]
+SFSH2 <- StndrdBtbl2$SF[StndrdBtbl2$Team=="ZiPS"]+StndrdBtbl2$SH[StndrdBtbl2$Team=="ZiPS"]
+outorhit2 <- contact2 - GIDP2 - SFSH2
+twoB2 <- StndrdBtbl2$`2B`[StndrdBtbl2$Team=="ZiPS"]
+threeB2 <- StndrdBtbl2$`3B`[StndrdBtbl2$Team=="ZiPS"]
+HR2 <- StndrdBtbl2$HR[StndrdBtbl2$Team=="ZiPS"]
+oneB2 <- StndrdBtbl2$`1B`[StndrdBtbl2$Team=="ZiPS"]
+BB2 <- StndrdBtbl2$BB[StndrdBtbl2$Team=="ZiPS"]+StndrdBtbl2$IBB[StndrdBtbl2$Team=="ZiPS"]+StndrdBtbl2$HBP[StndrdBtbl2$Team=="ZiPS"]
+hit2 <- twoB2 + oneB2 + threeB2 + HR2 + BB2 
+out2 <- outorhit2 - hit2
+ROE2 <-  StndrdBtbl2$AB[StndrdBtbl2$Team=="ZiPS"] - K2 - twoB2 - threeB2-HR2 -oneB2- out2 - GIDP2
+}else{
+SB2 <- StndrdBtbl2$SB[StndrdBtbl2$Season=="Total"]
+CS2 <- StndrdBtbl2$CS[StndrdBtbl2$Season=="Total"]
+stay2 <- StndrdBtbl2$AB[StndrdBtbl2$Season=="Total"]*.400-StndrdBtbl2$CS[StndrdBtbl2$Season=="Total"]-StndrdBtbl2$SB[StndrdBtbl2$Season=="Total"]
+K2 <- StndrdBtbl2$SO[StndrdBtbl2$Season=="Total"]
+contact2 <-  StndrdBtbl2$PA[StndrdBtbl2$Season=="Total"] - K2
+GIDP2 <- StndrdBtbl2$GDP[StndrdBtbl2$Season=="Total"]
+SFSH2 <- StndrdBtbl2$SF[StndrdBtbl2$Season=="Total"]+StndrdBtbl2$SH[StndrdBtbl2$Season=="Total"]
+outorhit2 <- contact2 - GIDP2 - SFSH2
+twoB2 <- StndrdBtbl2$`2B`[StndrdBtbl2$Season=="Total"]
+threeB2 <- StndrdBtbl2$`3B`[StndrdBtbl2$Season=="Total"]
+HR2 <- StndrdBtbl2$HR[StndrdBtbl2$Season=="Total"]
+oneB2 <- StndrdBtbl2$`1B`[StndrdBtbl2$Season=="Total"]
+BB2 <- StndrdBtbl2$BB[StndrdBtbl2$Season=="Total"]+StndrdBtbl2$IBB[StndrdBtbl2$Season=="Total"]+StndrdBtbl2$HBP[StndrdBtbl2$Season=="Total"]
+hit2 <-  twoB2 + oneB2 + threeB2 + HR2 + BB2 
+out2 <- outorhit2 - hit2
+ROE2 <-  StndrdBtbl2$AB[StndrdBtbl2$Season=="Total"] - K2 - twoB2 - threeB2-HR2 -oneB2 - out2 - GIDP2
+
+
+
+
+
+}
+
+two["SB",] <- SB2/(CS2+SB2+stay2)
+two["CS",] <- CS2/(CS2+SB2+stay2)
+two["stay",] <- stay2/(CS2+SB2+stay2)
+two["GIDP",] <- GIDP2/(GIDP2+SFSH2+outorhit2)
+two["SFSH",] <- SFSH2/(GIDP2+SFSH2+outorhit2)
+two["outorhit",] <- outorhit2/(GIDP2+SFSH2+outorhit2)
+two["K",] <- K2/(K2+contact2)
+two["2B",] <- twoB2/(twoB2+HR2+oneB2+BB2+threeB2)
+two["3B",] <- threeB2/(twoB2+HR2+oneB2+BB2+threeB2)
+two["HR",] <- HR2/(twoB2+HR2+oneB2+BB2+threeB2)
+two["1B",] <- oneB2/(twoB2+HR2+oneB2+BB2+threeB2)
+two["BB",] <- BB2/(twoB2+HR2+oneB2+BB2+threeB2)
+two["contact",] <-  contact2/(K2+contact2)
+two["hit",] <- hit2/(hit2+out2)
+two["out",] <- out2/(hit2+out2)
+
+#Player three
+urlp3 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[3])
+webpagersp3 <- read_html(urlp3)
+tblsp3 <- webpagersp3 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl3 <- tblsp3[[1]]
+StndrdBtbl3[is.na(StndrdBtbl3)] <- 0
+StndrdBtbl3$PA <- as.numeric(StndrdBtbl3$PA)
+StndrdBtbl3$AB <- as.numeric(StndrdBtbl3$AB)
+StndrdBtbl3$SO <- as.numeric(StndrdBtbl3$SO)
+StndrdBtbl3$`1B` <- as.numeric(StndrdBtbl3$`1B`)
+StndrdBtbl3$`2B` <- as.numeric(StndrdBtbl3$`2B`)
+StndrdBtbl3$`3B` <- as.numeric(StndrdBtbl3$`3B`)
+StndrdBtbl3$H <- as.numeric(StndrdBtbl3$H)
+StndrdBtbl3$BB <- as.numeric(StndrdBtbl3$BB)
+StndrdBtbl3$IBB <- as.numeric(StndrdBtbl3$IBB)
+StndrdBtbl3$HBP <- as.numeric(StndrdBtbl3$HBP)
+StndrdBtbl3$HR <- as.numeric(StndrdBtbl3$HR)
+StndrdBtbl3$SF <- as.numeric(StndrdBtbl3$SF)
+StndrdBtbl3$SH <- as.numeric(StndrdBtbl3$SH)
+StndrdBtbl3$GDP <- as.numeric(StndrdBtbl3$GDP)
+StndrdBtbl3$SB <- as.numeric(StndrdBtbl3$SB)
+StndrdBtbl3$CS <- as.numeric(StndrdBtbl3$CS)
+three <- matrix(0, 16, 1)
+dimnames(three)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(three)[[2]] <- 1
+  
+
+if (length(StndrdBtbl3$AB[StndrdBtbl3$Team=="ZiPS"])==1){
+SB3 <- StndrdBtbl3$SB[StndrdBtbl3$Team=="ZiPS"]
+CS3 <- StndrdBtbl3$CS[StndrdBtbl3$Team=="ZiPS"]
+stay3 <- StndrdBtbl3$AB[StndrdBtbl3$Team=="ZiPS"]*.400-StndrdBtbl3$CS[StndrdBtbl3$Team=="ZiPS"]-StndrdBtbl3$SB[StndrdBtbl3$Team=="ZiPS"]
+K3 <- StndrdBtbl3$SO[StndrdBtbl3$Team=="ZiPS"]
+contact3 <-  StndrdBtbl3$PA[StndrdBtbl3$Team=="ZiPS"] - K3
+GIDP3 <- StndrdBtbl3$GDP[StndrdBtbl3$Team=="ZiPS"]
+SFSH3 <- StndrdBtbl3$SF[StndrdBtbl3$Team=="ZiPS"]+StndrdBtbl3$SH[StndrdBtbl3$Team=="ZiPS"]
+outorhit3 <- contact3 - GIDP3 - SFSH3
+twoB3 <- StndrdBtbl3$`2B`[StndrdBtbl3$Team=="ZiPS"]
+threeB3 <- StndrdBtbl3$`3B`[StndrdBtbl3$Team=="ZiPS"]
+HR3 <- StndrdBtbl3$HR[StndrdBtbl3$Team=="ZiPS"]
+oneB3 <- StndrdBtbl3$`1B`[StndrdBtbl3$Team=="ZiPS"]
+BB3 <- StndrdBtbl3$BB[StndrdBtbl3$Team=="ZiPS"]+StndrdBtbl3$IBB[StndrdBtbl3$Team=="ZiPS"]+StndrdBtbl3$HBP[StndrdBtbl3$Team=="ZiPS"]
+hit3 <- twoB3 + oneB3 + threeB3 + HR3 + BB3 
+out3 <- outorhit3 - hit3
+ROE3 <-  StndrdBtbl3$AB[StndrdBtbl3$Team=="ZiPS"] - K3 - twoB3 - threeB3-HR3 -oneB3- out3 - GIDP3
+}else{
+SB3 <- StndrdBtbl3$SB[StndrdBtbl3$Team=="ZiPS"]
+CS3 <- StndrdBtbl3$CS[StndrdBtbl3$Team=="ZiPS"]
+stay3 <- StndrdBtbl3$AB[StndrdBtbl3$Team=="ZiPS"]*.400-StndrdBtbl3$CS[StndrdBtbl3$Team=="ZiPS"]-StndrdBtbl3$SB[StndrdBtbl3$Team=="ZiPS"]
+K3 <- StndrdBtbl3$SO[StndrdBtbl3$Team=="ZiPS"]
+contact3 <-  StndrdBtbl3$PA[StndrdBtbl3$Team=="ZiPS"] - K3
+GIDP3 <- StndrdBtbl3$GDP[StndrdBtbl3$Team=="ZiPS"]
+SFSH3 <- StndrdBtbl3$SF[StndrdBtbl3$Team=="ZiPS"]+StndrdBtbl3$SH[StndrdBtbl3$Team=="ZiPS"]
+outorhit3 <- contact3 - GIDP3 - SFSH3
+twoB3 <- StndrdBtbl3$`2B`[StndrdBtbl3$Team=="ZiPS"]
+threeB3 <- StndrdBtbl3$`3B`[StndrdBtbl3$Team=="ZiPS"]
+HR3 <- StndrdBtbl3$HR[StndrdBtbl3$Team=="ZiPS"]
+oneB3 <- StndrdBtbl3$`1B`[StndrdBtbl3$Team=="ZiPS"]
+BB3 <- StndrdBtbl3$BB[StndrdBtbl3$Team=="ZiPS"]+StndrdBtbl3$IBB[StndrdBtbl3$Team=="ZiPS"]+StndrdBtbl3$HBP[StndrdBtbl3$Team=="ZiPS"]
+hit3 <-  twoB3 + oneB3 + threeB3 + HR3 + BB3 
+out3 <- outorhit3 - hit3
+ROE3 <-  StndrdBtbl3$AB[StndrdBtbl3$Team=="ZiPS"] - K3 - twoB3 - threeB3-HR3 -oneB3 - out3 - GIDP3
+
+
+
+
+
+}
+
+three["SB",] <- SB3/(CS3+SB3+stay3)
+three["CS",] <- CS3/(CS3+SB3+stay3)
+three["stay",] <- stay3/(CS3+SB3+stay3)
+three["GIDP",] <- GIDP3/(GIDP3+SFSH3+outorhit3)
+three["SFSH",] <- SFSH3/(GIDP3+SFSH3+outorhit3)
+three["outorhit",] <- outorhit3/(GIDP3+SFSH3+outorhit3)
+three["K",] <- K3/(K3+contact3)
+three["2B",] <- twoB3/(twoB3+HR3+oneB3+BB3+threeB3)
+three["3B",] <- threeB3/(twoB3+HR3+oneB3+BB3+threeB3)
+three["HR",] <- HR3/(twoB3+HR3+oneB3+BB3+threeB3)
+three["1B",] <- oneB3/(twoB3+HR3+oneB3+BB3+threeB3)
+three["BB",] <- BB3/(twoB3+HR3+oneB3+BB3+threeB3)
+three["contact",] <-  contact3/(K3+contact3)
+three["hit",] <- hit3/(hit3+out3)
+three["out",] <- out3/(hit3+out3)
+
+#Player four
+urlp4 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[4])
+webpagersp4 <- read_html(urlp4)
+tblsp4 <- webpagersp4 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl4 <- tblsp4[[1]]
+StndrdBtbl4[is.na(StndrdBtbl4)] <- 0
+StndrdBtbl4$PA <- as.numeric(StndrdBtbl4$PA)
+StndrdBtbl4$AB <- as.numeric(StndrdBtbl4$AB)
+StndrdBtbl4$SO <- as.numeric(StndrdBtbl4$SO)
+StndrdBtbl4$`1B` <- as.numeric(StndrdBtbl4$`1B`)
+StndrdBtbl4$`2B` <- as.numeric(StndrdBtbl4$`2B`)
+StndrdBtbl4$`3B` <- as.numeric(StndrdBtbl4$`3B`)
+StndrdBtbl4$H <- as.numeric(StndrdBtbl4$H)
+StndrdBtbl4$BB <- as.numeric(StndrdBtbl4$BB)
+StndrdBtbl4$IBB <- as.numeric(StndrdBtbl4$IBB)
+StndrdBtbl4$HBP <- as.numeric(StndrdBtbl4$HBP)
+StndrdBtbl4$HR <- as.numeric(StndrdBtbl4$HR)
+StndrdBtbl4$SF <- as.numeric(StndrdBtbl4$SF)
+StndrdBtbl4$SH <- as.numeric(StndrdBtbl4$SH)
+StndrdBtbl4$GDP <- as.numeric(StndrdBtbl4$GDP)
+StndrdBtbl4$SB <- as.numeric(StndrdBtbl4$SB)
+StndrdBtbl4$CS <- as.numeric(StndrdBtbl4$CS)
+four <- matrix(0, 16, 1)
+dimnames(four)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(four)[[2]] <- 1
+  
+
+if (length(StndrdBtbl4$AB[StndrdBtbl4$Team=="ZiPS"])==1){
+SB4 <- StndrdBtbl4$SB[StndrdBtbl4$Team=="ZiPS"]
+CS4 <- StndrdBtbl4$CS[StndrdBtbl4$Team=="ZiPS"]
+stay4 <- StndrdBtbl4$AB[StndrdBtbl4$Team=="ZiPS"]*.400-StndrdBtbl4$CS[StndrdBtbl4$Team=="ZiPS"]-StndrdBtbl4$SB[StndrdBtbl4$Team=="ZiPS"]
+K4 <- StndrdBtbl4$SO[StndrdBtbl4$Team=="ZiPS"]
+contact4 <-  StndrdBtbl4$PA[StndrdBtbl4$Team=="ZiPS"] - K4
+GIDP4 <- StndrdBtbl4$GDP[StndrdBtbl4$Team=="ZiPS"]
+SFSH4 <- StndrdBtbl4$SF[StndrdBtbl4$Team=="ZiPS"]+StndrdBtbl4$SH[StndrdBtbl4$Team=="ZiPS"]
+outorhit4 <- contact4 - GIDP4 - SFSH4
+twoB4 <- StndrdBtbl4$`2B`[StndrdBtbl4$Team=="ZiPS"]
+threeB4 <- StndrdBtbl4$`3B`[StndrdBtbl4$Team=="ZiPS"]
+HR4 <- StndrdBtbl4$HR[StndrdBtbl4$Team=="ZiPS"]
+oneB4 <- StndrdBtbl4$`1B`[StndrdBtbl4$Team=="ZiPS"]
+BB4 <- StndrdBtbl4$BB[StndrdBtbl4$Team=="ZiPS"]+StndrdBtbl4$IBB[StndrdBtbl4$Team=="ZiPS"]+StndrdBtbl4$HBP[StndrdBtbl4$Team=="ZiPS"]
+hit4 <- twoB4 + oneB4 + threeB4 + HR4 + BB4 
+out4 <- outorhit4 - hit4
+ROE4 <-  StndrdBtbl4$AB[StndrdBtbl4$Team=="ZiPS"] - K4 - twoB4 - threeB4-HR4 -oneB4- out4 - GIDP4
+}else{
+SB4 <- StndrdBtbl4$SB[StndrdBtbl4$Season=="Total"]
+CS4 <- StndrdBtbl4$CS[StndrdBtbl4$Season=="Total"]
+stay4 <- StndrdBtbl4$AB[StndrdBtbl4$Season=="Total"]*.400-StndrdBtbl4$CS[StndrdBtbl4$Season=="Total"]-StndrdBtbl4$SB[StndrdBtbl4$Season=="Total"]
+K4 <- StndrdBtbl4$SO[StndrdBtbl4$Season=="Total"]
+contact4 <-  StndrdBtbl4$PA[StndrdBtbl4$Season=="Total"] - K4
+GIDP4 <- StndrdBtbl4$GDP[StndrdBtbl4$Season=="Total"]
+SFSH4 <- StndrdBtbl4$SF[StndrdBtbl4$Season=="Total"]+StndrdBtbl4$SH[StndrdBtbl4$Season=="Total"]
+outorhit4 <- contact4 - GIDP4 - SFSH4
+twoB4 <- StndrdBtbl4$`2B`[StndrdBtbl4$Season=="Total"]
+threeB4 <- StndrdBtbl4$`3B`[StndrdBtbl4$Season=="Total"]
+HR4 <- StndrdBtbl4$HR[StndrdBtbl4$Season=="Total"]
+oneB4 <- StndrdBtbl4$`1B`[StndrdBtbl4$Season=="Total"]
+BB4 <- StndrdBtbl4$BB[StndrdBtbl4$Season=="Total"]+StndrdBtbl4$IBB[StndrdBtbl4$Season=="Total"]+StndrdBtbl4$HBP[StndrdBtbl4$Season=="Total"]
+hit4 <-  twoB4 + oneB4 + threeB4 + HR4 + BB4 
+out4 <- outorhit4 - hit4
+ROE4 <-  StndrdBtbl4$AB[StndrdBtbl4$Season=="Total"] - K4 - twoB4 - threeB4-HR4 -oneB4 - out4 - GIDP4
+
+
+
+
+
+}
+
+four["SB",] <- SB4/(CS4+SB4+stay4)
+four["CS",] <- CS4/(CS4+SB4+stay4)
+four["stay",] <- stay4/(CS4+SB4+stay4)
+four["GIDP",] <- GIDP4/(GIDP4+SFSH4+outorhit4)
+four["SFSH",] <- SFSH4/(GIDP4+SFSH4+outorhit4)
+four["outorhit",] <- outorhit4/(GIDP4+SFSH4+outorhit4)
+four["K",] <- K4/(K4+contact4)
+four["2B",] <- twoB4/(twoB4+HR4+oneB4+BB4+threeB4)
+four["3B",] <- threeB4/(twoB4+HR4+oneB4+BB4+threeB4)
+four["HR",] <- HR4/(twoB4+HR4+oneB4+BB4+threeB4)
+four["1B",] <- oneB4/(twoB4+HR4+oneB4+BB4+threeB4)
+four["BB",] <- BB4/(twoB4+HR4+oneB4+BB4+threeB4)
+four["contact",] <-  contact4/(K4+contact4)
+four["hit",] <- hit4/(hit4+out4)
+four["out",] <- out4/(hit4+out4)
+
+
+#Player five
+urlp5 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[5])
+webpagersp5 <- read_html(urlp5)
+tblsp5 <- webpagersp5 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl5 <- tblsp5[[1]]
+StndrdBtbl5[is.na(StndrdBtbl5)] <- 0
+StndrdBtbl5$PA <- as.numeric(StndrdBtbl5$PA)
+StndrdBtbl5$AB <- as.numeric(StndrdBtbl5$AB)
+StndrdBtbl5$SO <- as.numeric(StndrdBtbl5$SO)
+StndrdBtbl5$`1B` <- as.numeric(StndrdBtbl5$`1B`)
+StndrdBtbl5$`2B` <- as.numeric(StndrdBtbl5$`2B`)
+StndrdBtbl5$`3B` <- as.numeric(StndrdBtbl5$`3B`)
+StndrdBtbl5$H <- as.numeric(StndrdBtbl5$H)
+StndrdBtbl5$BB <- as.numeric(StndrdBtbl5$BB)
+StndrdBtbl5$IBB <- as.numeric(StndrdBtbl5$IBB)
+StndrdBtbl5$HBP <- as.numeric(StndrdBtbl5$HBP)
+StndrdBtbl5$HR <- as.numeric(StndrdBtbl5$HR)
+StndrdBtbl5$SF <- as.numeric(StndrdBtbl5$SF)
+StndrdBtbl5$SH <- as.numeric(StndrdBtbl5$SH)
+StndrdBtbl5$GDP <- as.numeric(StndrdBtbl5$GDP)
+StndrdBtbl5$SB <- as.numeric(StndrdBtbl5$SB)
+StndrdBtbl5$CS <- as.numeric(StndrdBtbl5$CS)
+five <- matrix(0, 16, 1)
+dimnames(five)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(five)[[2]] <- 1
+  
+
+if (length(StndrdBtbl5$AB[StndrdBtbl5$Team=="ZiPS"])==1){
+SB5 <- StndrdBtbl5$SB[StndrdBtbl5$Team=="ZiPS"]
+CS5 <- StndrdBtbl5$CS[StndrdBtbl5$Team=="ZiPS"]
+stay5 <- StndrdBtbl5$AB[StndrdBtbl5$Team=="ZiPS"]*.400-StndrdBtbl5$CS[StndrdBtbl5$Team=="ZiPS"]-StndrdBtbl5$SB[StndrdBtbl5$Team=="ZiPS"]
+K5 <- StndrdBtbl5$SO[StndrdBtbl5$Team=="ZiPS"]
+contact5 <-  StndrdBtbl5$PA[StndrdBtbl5$Team=="ZiPS"] - K5
+GIDP5 <- StndrdBtbl5$GDP[StndrdBtbl5$Team=="ZiPS"]
+SFSH5 <- StndrdBtbl5$SF[StndrdBtbl5$Team=="ZiPS"]+StndrdBtbl5$SH[StndrdBtbl5$Team=="ZiPS"]
+outorhit5 <- contact5 - GIDP5 - SFSH5
+twoB5 <- StndrdBtbl5$`2B`[StndrdBtbl5$Team=="ZiPS"]
+threeB5 <- StndrdBtbl5$`3B`[StndrdBtbl5$Team=="ZiPS"]
+HR5 <- StndrdBtbl5$HR[StndrdBtbl5$Team=="ZiPS"]
+oneB5 <- StndrdBtbl5$`1B`[StndrdBtbl5$Team=="ZiPS"]
+BB5 <- StndrdBtbl5$BB[StndrdBtbl5$Team=="ZiPS"]+StndrdBtbl5$IBB[StndrdBtbl5$Team=="ZiPS"]+StndrdBtbl5$HBP[StndrdBtbl5$Team=="ZiPS"]
+hit5 <- twoB5 + oneB5 + threeB5 + HR5 + BB5 
+out5 <- outorhit5 - hit5
+ROE5 <-  StndrdBtbl5$AB[StndrdBtbl5$Team=="ZiPS"] - K5 - twoB5 - threeB5-HR5 -oneB5- out5 - GIDP5
+}else{
+SB5 <- StndrdBtbl5$SB[StndrdBtbl5$Season=="Total"]
+CS5 <- StndrdBtbl5$CS[StndrdBtbl5$Season=="Total"]
+stay5 <- StndrdBtbl5$AB[StndrdBtbl5$Season=="Total"]*.400-StndrdBtbl5$CS[StndrdBtbl5$Season=="Total"]-StndrdBtbl5$SB[StndrdBtbl5$Season=="Total"]
+K5 <- StndrdBtbl5$SO[StndrdBtbl5$Season=="Total"]
+contact5 <-  StndrdBtbl5$PA[StndrdBtbl5$Season=="Total"] - K5
+GIDP5 <- StndrdBtbl5$GDP[StndrdBtbl5$Season=="Total"]
+SFSH5 <- StndrdBtbl5$SF[StndrdBtbl5$Season=="Total"]+StndrdBtbl5$SH[StndrdBtbl5$Season=="Total"]
+outorhit5 <- contact5 - GIDP5 - SFSH5
+twoB5 <- StndrdBtbl5$`2B`[StndrdBtbl5$Season=="Total"]
+threeB5 <- StndrdBtbl5$`3B`[StndrdBtbl5$Season=="Total"]
+HR5 <- StndrdBtbl5$HR[StndrdBtbl5$Season=="Total"]
+oneB5 <- StndrdBtbl5$`1B`[StndrdBtbl5$Season=="Total"]
+BB5 <- StndrdBtbl5$BB[StndrdBtbl5$Season=="Total"]+StndrdBtbl5$IBB[StndrdBtbl5$Season=="Total"]+StndrdBtbl5$HBP[StndrdBtbl5$Season=="Total"]
+hit5 <-  twoB5 + oneB5 + threeB5 + HR5 + BB5 
+out5 <- outorhit5 - hit5
+ROE5 <-  StndrdBtbl5$AB[StndrdBtbl5$Season=="Total"] - K5 - twoB5 - threeB5-HR5 -oneB5 - out5 - GIDP5
+
+
+
+
+
+}
+
+five["SB",] <- SB5/(CS5+SB5+stay5)
+five["CS",] <- CS5/(CS5+SB5+stay5)
+five["stay",] <- stay5/(CS5+SB5+stay5)
+five["GIDP",] <- GIDP5/(GIDP5+SFSH5+outorhit5)
+five["SFSH",] <- SFSH5/(GIDP5+SFSH5+outorhit5)
+five["outorhit",] <- outorhit5/(GIDP5+SFSH5+outorhit5)
+five["K",] <- K5/(K5+contact5)
+five["2B",] <- twoB5/(twoB5+HR5+oneB5+BB5+threeB5)
+five["3B",] <- threeB5/(twoB5+HR5+oneB5+BB5+threeB5)
+five["HR",] <- HR5/(twoB5+HR5+oneB5+BB5+threeB5)
+five["1B",] <- oneB5/(twoB5+HR5+oneB5+BB5+threeB5)
+five["BB",] <- BB5/(twoB5+HR5+oneB5+BB5+threeB5)
+five["contact",] <-  contact5/(K5+contact5)
+five["hit",] <- hit5/(hit5+out5)
+five["out",] <- out5/(hit5+out5)
+
+#Player six
+urlp6 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[6])
+webpagersp6 <- read_html(urlp6)
+tblsp6 <- webpagersp6 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl6 <- tblsp6[[1]]
+StndrdBtbl6[is.na(StndrdBtbl6)] <- 0
+StndrdBtbl6$PA <- as.numeric(StndrdBtbl6$PA)
+StndrdBtbl6$AB <- as.numeric(StndrdBtbl6$AB)
+StndrdBtbl6$SO <- as.numeric(StndrdBtbl6$SO)
+StndrdBtbl6$`1B` <- as.numeric(StndrdBtbl6$`1B`)
+StndrdBtbl6$`2B` <- as.numeric(StndrdBtbl6$`2B`)
+StndrdBtbl6$`3B` <- as.numeric(StndrdBtbl6$`3B`)
+StndrdBtbl6$H <- as.numeric(StndrdBtbl6$H)
+StndrdBtbl6$BB <- as.numeric(StndrdBtbl6$BB)
+StndrdBtbl6$IBB <- as.numeric(StndrdBtbl6$IBB)
+StndrdBtbl6$HBP <- as.numeric(StndrdBtbl6$HBP)
+StndrdBtbl6$HR <- as.numeric(StndrdBtbl6$HR)
+StndrdBtbl6$SF <- as.numeric(StndrdBtbl6$SF)
+StndrdBtbl6$SH <- as.numeric(StndrdBtbl6$SH)
+StndrdBtbl6$GDP <- as.numeric(StndrdBtbl6$GDP)
+StndrdBtbl6$SB <- as.numeric(StndrdBtbl6$SB)
+StndrdBtbl6$CS <- as.numeric(StndrdBtbl6$CS)
+six <- matrix(0, 16, 1)
+dimnames(six)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(six)[[2]] <- 1
+  
+
+if (length(StndrdBtbl6$AB[StndrdBtbl6$Team=="ZiPS"])==1){
+SB6 <- StndrdBtbl6$SB[StndrdBtbl6$Team=="ZiPS"]
+CS6 <- StndrdBtbl6$CS[StndrdBtbl6$Team=="ZiPS"]
+stay6 <- StndrdBtbl6$AB[StndrdBtbl6$Team=="ZiPS"]*.400-StndrdBtbl6$CS[StndrdBtbl6$Team=="ZiPS"]-StndrdBtbl6$SB[StndrdBtbl6$Team=="ZiPS"]
+K6 <- StndrdBtbl6$SO[StndrdBtbl6$Team=="ZiPS"]
+contact6 <-  StndrdBtbl6$PA[StndrdBtbl6$Team=="ZiPS"] - K6
+GIDP6 <- StndrdBtbl6$GDP[StndrdBtbl6$Team=="ZiPS"]
+SFSH6 <- StndrdBtbl6$SF[StndrdBtbl6$Team=="ZiPS"]+StndrdBtbl6$SH[StndrdBtbl6$Team=="ZiPS"]
+outorhit6 <- contact6 - GIDP6 - SFSH6
+twoB6 <- StndrdBtbl6$`2B`[StndrdBtbl6$Team=="ZiPS"]
+threeB6 <- StndrdBtbl6$`3B`[StndrdBtbl6$Team=="ZiPS"]
+HR6 <- StndrdBtbl6$HR[StndrdBtbl6$Team=="ZiPS"]
+oneB6 <- StndrdBtbl6$`1B`[StndrdBtbl6$Team=="ZiPS"]
+BB6 <- StndrdBtbl6$BB[StndrdBtbl6$Team=="ZiPS"]+StndrdBtbl6$IBB[StndrdBtbl6$Team=="ZiPS"]+StndrdBtbl6$HBP[StndrdBtbl6$Team=="ZiPS"]
+hit6 <- twoB6 + oneB6 + threeB6 + HR6 + BB6 
+out6 <- outorhit6 - hit6
+ROE6 <-  StndrdBtbl6$AB[StndrdBtbl6$Team=="ZiPS"] - K6 - twoB6 - threeB6-HR6 -oneB6- out6 - GIDP6
+}else{
+SB6 <- StndrdBtbl6$SB[StndrdBtbl6$Season=="Total"]
+CS6 <- StndrdBtbl6$CS[StndrdBtbl6$Season=="Total"]
+stay6 <- StndrdBtbl6$AB[StndrdBtbl6$Season=="Total"]*.400-StndrdBtbl6$CS[StndrdBtbl6$Season=="Total"]-StndrdBtbl6$SB[StndrdBtbl6$Season=="Total"]
+K6 <- StndrdBtbl6$SO[StndrdBtbl6$Season=="Total"]
+contact6 <-  StndrdBtbl6$PA[StndrdBtbl6$Season=="Total"] - K6
+GIDP6 <- StndrdBtbl6$GDP[StndrdBtbl6$Season=="Total"]
+SFSH6 <- StndrdBtbl6$SF[StndrdBtbl6$Season=="Total"]+StndrdBtbl6$SH[StndrdBtbl6$Season=="Total"]
+outorhit6 <- contact6 - GIDP6 - SFSH6
+twoB6 <- StndrdBtbl6$`2B`[StndrdBtbl6$Season=="Total"]
+threeB6 <- StndrdBtbl6$`3B`[StndrdBtbl6$Season=="Total"]
+HR6 <- StndrdBtbl6$HR[StndrdBtbl6$Season=="Total"]
+oneB6 <- StndrdBtbl6$`1B`[StndrdBtbl6$Season=="Total"]
+BB6 <- StndrdBtbl6$BB[StndrdBtbl6$Season=="Total"]+StndrdBtbl6$IBB[StndrdBtbl6$Season=="Total"]+StndrdBtbl6$HBP[StndrdBtbl6$Season=="Total"]
+hit6 <-  twoB6 + oneB6 + threeB6 + HR6 + BB6 
+out6 <- outorhit6 - hit6
+ROE6 <-  StndrdBtbl6$AB[StndrdBtbl6$Season=="Total"] - K6 - twoB6 - threeB6-HR6 -oneB6 - out6 - GIDP6
+
+
+
+
+
+}
+
+six["SB",] <- SB6/(CS6+SB6+stay6)
+six["CS",] <- CS6/(CS6+SB6+stay6)
+six["stay",] <- stay6/(CS6+SB6+stay6)
+six["GIDP",] <- GIDP6/(GIDP6+SFSH6+outorhit6)
+six["SFSH",] <- SFSH6/(GIDP6+SFSH6+outorhit6)
+six["outorhit",] <- outorhit6/(GIDP6+SFSH6+outorhit6)
+six["K",] <- K6/(K6+contact6)
+six["2B",] <- twoB6/(twoB6+HR6+oneB6+BB6+threeB6)
+six["3B",] <- threeB6/(twoB6+HR6+oneB6+BB6+threeB6)
+six["HR",] <- HR6/(twoB6+HR6+oneB6+BB6+threeB6)
+six["1B",] <- oneB6/(twoB6+HR6+oneB6+BB6+threeB6)
+six["BB",] <- BB6/(twoB6+HR6+oneB6+BB6+threeB6)
+six["contact",] <-  contact6/(K6+contact6)
+six["hit",] <- hit6/(hit6+out6)
+six["out",] <- out6/(hit6+out6)
+
+
+#Player seven
+urlp7 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[7])
+webpagersp7 <- read_html(urlp7)
+tblsp7 <- webpagersp7 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl7 <- tblsp7[[1]]
+StndrdBtbl7[is.na(StndrdBtbl7)] <- 0
+StndrdBtbl7$PA <- as.numeric(StndrdBtbl7$PA)
+StndrdBtbl7$AB <- as.numeric(StndrdBtbl7$AB)
+StndrdBtbl7$SO <- as.numeric(StndrdBtbl7$SO)
+StndrdBtbl7$`1B` <- as.numeric(StndrdBtbl7$`1B`)
+StndrdBtbl7$`2B` <- as.numeric(StndrdBtbl7$`2B`)
+StndrdBtbl7$`3B` <- as.numeric(StndrdBtbl7$`3B`)
+StndrdBtbl7$H <- as.numeric(StndrdBtbl7$H)
+StndrdBtbl7$BB <- as.numeric(StndrdBtbl7$BB)
+StndrdBtbl7$IBB <- as.numeric(StndrdBtbl7$IBB)
+StndrdBtbl7$HBP <- as.numeric(StndrdBtbl7$HBP)
+StndrdBtbl7$HR <- as.numeric(StndrdBtbl7$HR)
+StndrdBtbl7$SF <- as.numeric(StndrdBtbl7$SF)
+StndrdBtbl7$SH <- as.numeric(StndrdBtbl7$SH)
+StndrdBtbl7$GDP <- as.numeric(StndrdBtbl7$GDP)
+StndrdBtbl7$SB <- as.numeric(StndrdBtbl7$SB)
+StndrdBtbl7$CS <- as.numeric(StndrdBtbl7$CS)
+seven <- matrix(0, 16, 1)
+dimnames(seven)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(seven)[[2]] <- 1
+  
+
+if (length(StndrdBtbl7$AB[StndrdBtbl7$Team=="ZiPS"])==1){
+SB7 <- StndrdBtbl7$SB[StndrdBtbl7$Team=="ZiPS"]
+CS7 <- StndrdBtbl7$CS[StndrdBtbl7$Team=="ZiPS"]
+stay7 <- StndrdBtbl7$AB[StndrdBtbl7$Team=="ZiPS"]*.400-StndrdBtbl7$CS[StndrdBtbl7$Team=="ZiPS"]-StndrdBtbl7$SB[StndrdBtbl7$Team=="ZiPS"]
+K7 <- StndrdBtbl7$SO[StndrdBtbl7$Team=="ZiPS"]
+contact7 <-  StndrdBtbl7$PA[StndrdBtbl7$Team=="ZiPS"] - K7
+GIDP7 <- StndrdBtbl7$GDP[StndrdBtbl7$Team=="ZiPS"]
+SFSH7 <- StndrdBtbl7$SF[StndrdBtbl7$Team=="ZiPS"]+StndrdBtbl7$SH[StndrdBtbl7$Team=="ZiPS"]
+outorhit7 <- contact7 - GIDP7 - SFSH7
+twoB7 <- StndrdBtbl7$`2B`[StndrdBtbl7$Team=="ZiPS"]
+threeB7 <- StndrdBtbl7$`3B`[StndrdBtbl7$Team=="ZiPS"]
+HR7 <- StndrdBtbl7$HR[StndrdBtbl7$Team=="ZiPS"]
+oneB7 <- StndrdBtbl7$`1B`[StndrdBtbl7$Team=="ZiPS"]
+BB7 <- StndrdBtbl7$BB[StndrdBtbl7$Team=="ZiPS"]+StndrdBtbl7$IBB[StndrdBtbl7$Team=="ZiPS"]+StndrdBtbl7$HBP[StndrdBtbl7$Team=="ZiPS"]
+hit7 <- twoB7 + oneB7 + threeB7 + HR7 + BB7 
+out7 <- outorhit7 - hit7
+ROE7 <-  StndrdBtbl7$AB[StndrdBtbl7$Team=="ZiPS"] - K7 - twoB7 - threeB7-HR7 -oneB7- out7 - GIDP7
+}else{
+SB7 <- StndrdBtbl7$SB[StndrdBtbl7$Season=="Total"]
+CS7 <- StndrdBtbl7$CS[StndrdBtbl7$Season=="Total"]
+stay7 <- StndrdBtbl7$AB[StndrdBtbl7$Season=="Total"]*.400-StndrdBtbl7$CS[StndrdBtbl7$Season=="Total"]-StndrdBtbl7$SB[StndrdBtbl7$Season=="Total"]
+K7 <- StndrdBtbl7$SO[StndrdBtbl7$Season=="Total"]
+contact7 <-  StndrdBtbl7$PA[StndrdBtbl7$Season=="Total"] - K7
+GIDP7 <- StndrdBtbl7$GDP[StndrdBtbl7$Season=="Total"]
+SFSH7 <- StndrdBtbl7$SF[StndrdBtbl7$Season=="Total"]+StndrdBtbl7$SH[StndrdBtbl7$Season=="Total"]
+outorhit7 <- contact7 - GIDP7 - SFSH7
+twoB7 <- StndrdBtbl7$`2B`[StndrdBtbl7$Season=="Total"]
+threeB7 <- StndrdBtbl7$`3B`[StndrdBtbl7$Season=="Total"]
+HR7 <- StndrdBtbl7$HR[StndrdBtbl7$Season=="Total"]
+oneB7 <- StndrdBtbl7$`1B`[StndrdBtbl7$Season=="Total"]
+BB7 <- StndrdBtbl7$BB[StndrdBtbl7$Season=="Total"]+StndrdBtbl7$IBB[StndrdBtbl7$Season=="Total"]+StndrdBtbl7$HBP[StndrdBtbl7$Season=="Total"]
+hit7 <-  twoB7 + oneB7 + threeB7 + HR7 + BB7 
+out7 <- outorhit7 - hit7
+ROE7 <-  StndrdBtbl7$AB[StndrdBtbl7$Season=="Total"] - K7 - twoB7 - threeB7-HR7 -oneB7 - out7 - GIDP7
+
+
+
+
+
+}
+
+seven["SB",] <- SB7/(CS7+SB7+stay7)
+seven["CS",] <- CS7/(CS7+SB7+stay7)
+seven["stay",] <- stay7/(CS7+SB7+stay7)
+seven["GIDP",] <- GIDP7/(GIDP7+SFSH7+outorhit7)
+seven["SFSH",] <- SFSH7/(GIDP7+SFSH7+outorhit7)
+seven["outorhit",] <- outorhit7/(GIDP7+SFSH7+outorhit7)
+seven["K",] <- K7/(K7+contact7)
+seven["2B",] <- twoB7/(twoB7+HR7+oneB7+BB7+threeB7)
+seven["3B",] <- threeB7/(twoB7+HR7+oneB7+BB7+threeB7)
+seven["HR",] <- HR7/(twoB7+HR7+oneB7+BB7+threeB7)
+seven["1B",] <- oneB7/(twoB7+HR7+oneB7+BB7+threeB7)
+seven["BB",] <- BB7/(twoB7+HR7+oneB7+BB7+threeB7)
+seven["contact",] <-  contact7/(K7+contact7)
+seven["hit",] <- hit7/(hit7+out7)
+seven["out",] <- out7/(hit7+out7)
+
+
+#Player eight
+urlp8 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[8],"&position=PB")
+webpagersp8 <- read_html(urlp8)
+tblsp8 <- webpagersp8 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl8 <- tblsp8[[1]]
+StndrdBtbl8[is.na(StndrdBtbl8)] <- 0
+StndrdBtbl8$PA <- as.numeric(StndrdBtbl8$PA)
+StndrdBtbl8$AB <- as.numeric(StndrdBtbl8$AB)
+StndrdBtbl8$SO <- as.numeric(StndrdBtbl8$SO)
+StndrdBtbl8$`1B` <- as.numeric(StndrdBtbl8$`1B`)
+StndrdBtbl8$`2B` <- as.numeric(StndrdBtbl8$`2B`)
+StndrdBtbl8$`3B` <- as.numeric(StndrdBtbl8$`3B`)
+StndrdBtbl8$H <- as.numeric(StndrdBtbl8$H)
+StndrdBtbl8$BB <- as.numeric(StndrdBtbl8$BB)
+StndrdBtbl8$IBB <- as.numeric(StndrdBtbl8$IBB)
+StndrdBtbl8$HBP <- as.numeric(StndrdBtbl8$HBP)
+StndrdBtbl8$HR <- as.numeric(StndrdBtbl8$HR)
+StndrdBtbl8$SF <- as.numeric(StndrdBtbl8$SF)
+StndrdBtbl8$SH <- as.numeric(StndrdBtbl8$SH)
+StndrdBtbl8$GDP <- as.numeric(StndrdBtbl8$GDP)
+StndrdBtbl8$SB <- as.numeric(StndrdBtbl8$SB)
+StndrdBtbl8$CS <- as.numeric(StndrdBtbl8$CS)
+eight <- matrix(0, 16, 1)
+dimnames(eight)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(eight)[[2]] <- 1
+  
+
+if (length(StndrdBtbl8$AB[StndrdBtbl8$Team=="ZiPS"])==1){
+SB8 <- StndrdBtbl8$SB[StndrdBtbl8$Team=="ZiPS"]
+CS8 <- StndrdBtbl8$CS[StndrdBtbl8$Team=="ZiPS"]
+stay8 <- StndrdBtbl8$AB[StndrdBtbl8$Team=="ZiPS"]*.400-StndrdBtbl8$CS[StndrdBtbl8$Team=="ZiPS"]-StndrdBtbl8$SB[StndrdBtbl8$Team=="ZiPS"]
+K8 <- StndrdBtbl8$SO[StndrdBtbl8$Team=="ZiPS"]
+contact8 <-  StndrdBtbl8$PA[StndrdBtbl8$Team=="ZiPS"] - K8
+GIDP8 <- StndrdBtbl8$GDP[StndrdBtbl8$Team=="ZiPS"]
+SFSH8 <- StndrdBtbl8$SF[StndrdBtbl8$Team=="ZiPS"]+StndrdBtbl8$SH[StndrdBtbl8$Team=="ZiPS"]
+outorhit8 <- contact8 - GIDP8 - SFSH8
+twoB8 <- StndrdBtbl8$`2B`[StndrdBtbl8$Team=="ZiPS"]
+threeB8 <- StndrdBtbl8$`3B`[StndrdBtbl8$Team=="ZiPS"]
+HR8 <- StndrdBtbl8$HR[StndrdBtbl8$Team=="ZiPS"]
+oneB8 <- StndrdBtbl8$`1B`[StndrdBtbl8$Team=="ZiPS"]
+BB8 <- StndrdBtbl8$BB[StndrdBtbl8$Team=="ZiPS"]+StndrdBtbl8$IBB[StndrdBtbl8$Team=="ZiPS"]+StndrdBtbl8$HBP[StndrdBtbl8$Team=="ZiPS"]
+hit8 <- twoB8 + oneB8 + threeB8 + HR8 + BB8 
+out8 <- outorhit8 - hit8
+ROE8 <-  StndrdBtbl8$AB[StndrdBtbl8$Team=="ZiPS"] - K8 - twoB8 - threeB8-HR8 -oneB8- out8 - GIDP8
+}else{
+SB8 <- StndrdBtbl8$SB[StndrdBtbl8$Season=="Total"]
+CS8 <- StndrdBtbl8$CS[StndrdBtbl8$Season=="Total"]
+stay8 <- StndrdBtbl8$AB[StndrdBtbl8$Season=="Total"]*.400-StndrdBtbl8$CS[StndrdBtbl8$Season=="Total"]-StndrdBtbl8$SB[StndrdBtbl8$Season=="Total"]
+K8 <- StndrdBtbl8$SO[StndrdBtbl8$Season=="Total"]
+contact8 <-  StndrdBtbl8$PA[StndrdBtbl8$Season=="Total"] - K8
+GIDP8 <- StndrdBtbl8$GDP[StndrdBtbl8$Season=="Total"]
+SFSH8 <- StndrdBtbl8$SF[StndrdBtbl8$Season=="Total"]+StndrdBtbl8$SH[StndrdBtbl8$Season=="Total"]
+outorhit8 <- contact8 - GIDP8 - SFSH8
+twoB8 <- StndrdBtbl8$`2B`[StndrdBtbl8$Season=="Total"]
+threeB8 <- StndrdBtbl8$`3B`[StndrdBtbl8$Season=="Total"]
+HR8 <- StndrdBtbl8$HR[StndrdBtbl8$Season=="Total"]
+oneB8 <- StndrdBtbl8$`1B`[StndrdBtbl8$Season=="Total"]
+BB8 <- StndrdBtbl8$BB[StndrdBtbl8$Season=="Total"]+StndrdBtbl8$IBB[StndrdBtbl8$Season=="Total"]+StndrdBtbl8$HBP[StndrdBtbl8$Season=="Total"]
+hit8 <-  twoB8 + oneB8 + threeB8 + HR8 + BB8 
+out8 <- outorhit8 - hit8
+ROE8 <-  StndrdBtbl8$AB[StndrdBtbl8$Season=="Total"] - K8 - twoB8 - threeB8-HR8 -oneB8 - out8 - GIDP8
+
+
+
+
+
+}
+
+eight["SB",] <- SB8/(CS8+SB8+stay8)
+eight["CS",] <- CS8/(CS8+SB8+stay8)
+eight["stay",] <- stay8/(CS8+SB8+stay8)
+eight["GIDP",] <- GIDP8/(GIDP8+SFSH8+outorhit8)
+eight["SFSH",] <- SFSH8/(GIDP8+SFSH8+outorhit8)
+eight["outorhit",] <- outorhit8/(GIDP8+SFSH8+outorhit8)
+eight["K",] <- K8/(K8+contact8)
+eight["2B",] <- twoB8/(twoB8+HR8+oneB8+BB8+threeB8)
+eight["3B",] <- threeB8/(twoB8+HR8+oneB8+BB8+threeB8)
+eight["HR",] <- HR8/(twoB8+HR8+oneB8+BB8+threeB8)
+eight["1B",] <- oneB8/(twoB8+HR8+oneB8+BB8+threeB8)
+eight["BB",] <- BB8/(twoB8+HR8+oneB8+BB8+threeB8)
+eight["contact",] <-  contact8/(K8+contact8)
+eight["hit",] <- hit8/(hit8+out8)
+eight["out",] <- out8/(hit8+out8)
+
+#Player nine
+urlp9 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",BattingOrder$playerID[9],"&position=PB")
+webpagersp9 <- read_html(urlp9)
+tblsp9 <- webpagersp9 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBtbl9 <- tblsp9[[1]]
+StndrdBtbl9[is.na(StndrdBtbl9)] <- 0
+StndrdBtbl9$PA <- as.numeric(StndrdBtbl9$PA)
+StndrdBtbl9$AB <- as.numeric(StndrdBtbl9$AB)
+StndrdBtbl9$SO <- as.numeric(StndrdBtbl9$SO)
+StndrdBtbl9$`1B` <- as.numeric(StndrdBtbl9$`1B`)
+StndrdBtbl9$`2B` <- as.numeric(StndrdBtbl9$`2B`)
+StndrdBtbl9$`3B` <- as.numeric(StndrdBtbl9$`3B`)
+StndrdBtbl9$H <- as.numeric(StndrdBtbl9$H)
+StndrdBtbl9$BB <- as.numeric(StndrdBtbl9$BB)
+StndrdBtbl9$IBB <- as.numeric(StndrdBtbl9$IBB)
+StndrdBtbl9$HBP <- as.numeric(StndrdBtbl9$HBP)
+StndrdBtbl9$HR <- as.numeric(StndrdBtbl9$HR)
+StndrdBtbl9$SF <- as.numeric(StndrdBtbl9$SF)
+StndrdBtbl9$SH <- as.numeric(StndrdBtbl9$SH)
+StndrdBtbl9$GDP <- as.numeric(StndrdBtbl9$GDP)
+StndrdBtbl9$SB <- as.numeric(StndrdBtbl9$SB)
+StndrdBtbl9$CS <- as.numeric(StndrdBtbl9$CS)
+nine <- matrix(0, 16, 1)
+dimnames(nine)[[1]] <- c("SB", "stay", "CS",
+                       "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+dimnames(nine)[[2]] <- 1
+  
+
+if (length(StndrdBtbl9$AB[StndrdBtbl9$Team=="ZiPS"])==1){
+SB9 <- StndrdBtbl9$SB[StndrdBtbl9$Team=="ZiPS"]
+CS9 <- StndrdBtbl9$CS[StndrdBtbl9$Team=="ZiPS"]
+stay9 <- StndrdBtbl9$AB[StndrdBtbl9$Team=="ZiPS"]*.400-StndrdBtbl9$CS[StndrdBtbl9$Team=="ZiPS"]-StndrdBtbl9$SB[StndrdBtbl9$Team=="ZiPS"]
+K9 <- StndrdBtbl9$SO[StndrdBtbl9$Team=="ZiPS"]
+contact9 <-  StndrdBtbl9$PA[StndrdBtbl9$Team=="ZiPS"] - K9
+GIDP9 <- StndrdBtbl9$GDP[StndrdBtbl9$Team=="ZiPS"]
+SFSH9 <- StndrdBtbl9$SF[StndrdBtbl9$Team=="ZiPS"]+StndrdBtbl9$SH[StndrdBtbl9$Team=="ZiPS"]
+outorhit9 <- contact9 - GIDP9 - SFSH9
+twoB9 <- StndrdBtbl9$`2B`[StndrdBtbl9$Team=="ZiPS"]
+threeB9 <- StndrdBtbl9$`3B`[StndrdBtbl9$Team=="ZiPS"]
+HR9 <- StndrdBtbl9$HR[StndrdBtbl9$Team=="ZiPS"]
+oneB9 <- StndrdBtbl9$`1B`[StndrdBtbl9$Team=="ZiPS"]
+BB9 <- StndrdBtbl9$BB[StndrdBtbl9$Team=="ZiPS"]+StndrdBtbl9$IBB[StndrdBtbl9$Team=="ZiPS"]+StndrdBtbl9$HBP[StndrdBtbl9$Team=="ZiPS"]
+hit9 <- twoB9 + oneB9 + threeB9 + HR9 + BB9 
+out9 <- outorhit9 - hit9
+ROE9 <-  StndrdBtbl9$AB[StndrdBtbl9$Team=="ZiPS"] - K9 - twoB9 - threeB9-HR9 -oneB9- out9 - GIDP9
+}else{
+SB9 <- StndrdBtbl9$SB[StndrdBtbl9$Season==2018][1]
+CS9 <- StndrdBtbl9$CS[StndrdBtbl9$Season==2018][1]
+stay9 <- StndrdBtbl9$AB[StndrdBtbl9$Season==2018][1]*.400-StndrdBtbl9$CS[StndrdBtbl9$Season==2018][1]-StndrdBtbl9$SB[StndrdBtbl9$Season==2018][1]
+K9 <- StndrdBtbl9$SO[StndrdBtbl9$Season==2018][1]
+contact9 <-  StndrdBtbl9$PA[StndrdBtbl9$Season==2018][1] - K9
+GIDP9 <- StndrdBtbl9$GDP[StndrdBtbl9$Season==2018][1]
+SFSH9 <- StndrdBtbl9$SF[StndrdBtbl9$Season==2018][1]+StndrdBtbl9$SH[StndrdBtbl9$Season==2018][1]
+outorhit9 <- contact9 - GIDP9 - SFSH9
+twoB9 <- StndrdBtbl9$`2B`[StndrdBtbl9$Season==2018][1]
+threeB9 <- StndrdBtbl9$`3B`[StndrdBtbl9$Season==2018][1]
+HR9 <- StndrdBtbl9$HR[StndrdBtbl9$Season==2018][1]
+oneB9 <- StndrdBtbl9$`1B`[StndrdBtbl9$Season==2018][1]
+BB9 <- StndrdBtbl9$BB[StndrdBtbl9$Season==2018][1]+StndrdBtbl9$IBB[StndrdBtbl9$Season==2018][1]+StndrdBtbl9$HBP[StndrdBtbl9$Season==2018][1]
+hit9 <-  twoB9 + oneB9 + threeB9 + HR9 + BB9 
+out9 <- outorhit9 - hit9
+ROE9 <-  StndrdBtbl9$AB[StndrdBtbl9$Season==2018] - K9 - twoB9 - threeB9-HR9 -oneB9 - out9 - GIDP9
+
+
+
+
+
+}
+
+nine["SB",] <- SB9/(CS9+SB9+stay9)
+nine["CS",] <- CS9/(CS9+SB9+stay9)
+nine["stay",] <- stay9/(CS9+SB9+stay9)
+nine["GIDP",] <- GIDP9/(GIDP9+SFSH9+outorhit9)
+nine["SFSH",] <- SFSH9/(GIDP9+SFSH9+outorhit9)
+nine["outorhit",] <- outorhit9/(GIDP9+SFSH9+outorhit9)
+nine["K",] <- K9/(K9+contact9)
+nine["2B",] <- twoB9/(twoB9+HR9+oneB9+BB9+threeB9)
+nine["3B",] <- threeB9/(twoB9+HR9+oneB9+BB9+threeB9)
+nine["HR",] <- HR9/(twoB9+HR9+oneB9+BB9+threeB9)
+nine["1B",] <- oneB9/(twoB9+HR9+oneB9+BB9+threeB9)
+nine["BB",] <- BB9/(twoB9+HR9+oneB9+BB9+threeB9)
+nine["contact",] <-  contact9/(K9+contact9)
+nine["hit",] <- hit9/(hit9+out9)
+nine["out",] <- out9/(hit9+out9)
+
+
+TeamBO <- list(one=one, two=two, three=three, four=four, five=five, six=six, seven=seven, eight=eight, nine=nine)
+}
+
+```
+
+
+
+###Bullpen
+
+```{r}
+
+Bullpenfx <- function(team){
+
+ 
+MLBTeamKey <- read.csv("MLBteamkey.csv", colClasses = "character")
+teamabbrev <- MLBTeamKey$ESPNTEAM[MLBTeamKey$FANGRAPHSTEAM==team]
+firstname <- MLBTeamKey$ESPNTEAM[MLBTeamKey$firstteam==team]
+lastname <- MLBTeamKey$ESPNTEAM[MLBTeamKey$lastteam==team]
+bullpenurl <- paste0("http://www.espn.com/mlb/team/depth/_/name/",teamabbrev,"/",firstname,"-",lastname)
+webpagepen <- read_html(bullpenurl)
+tblspen <- webpagepen %>%
+        html_nodes(xpath='//table[@class="Table2__table-scroller Table2__table"]') %>% 
+        html_table(fill =TRUE)
+TeamDP <- tblspen[[1]]
+player <- c(TeamDP$Starter[2],TeamDP$`2nd`[2],TeamDP$`3rd`[2],TeamDP$`4th`[2],TeamDP$`5th`[2],TeamDP$Starter[3])
+playerID <- NA
+Bullpen <- data.frame(player,playerID)
+MLBmasterkey <- read.csv("MLBmasterkey.csv", colClasses = "character")
+Bullpen$playerID[1] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[1]]
+Bullpen$playerID[2] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[2]]
+Bullpen$playerID[3] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[3]]
+Bullpen$playerID[4] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[4]]
+Bullpen$playerID[5] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[5]]
+Bullpen$playerID[6] <- MLBmasterkey$fg_id[MLBmasterkey$mlb_name==Bullpen$player[6]]
+
+#RelieverOne
+urlbp11 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[1],"&position=P&season=0")
+webpagers <- read_html(urlbp11)
+tblsbp11 <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBPtbl1 <- tblsbp11[[1]]
+StndrdBPtbl1[is.na(StndrdBPtbl1)] <- 0
+urlbp21 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[1])
+webpagers21 <- read_html(urlbp21)
+tblsbp21 <- webpagers21 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngBPtbl1 <- tblsbp21[[1]]
+FldngBPtbl1[is.na(FldngBPtbl1)] <- 0
+urlbp31 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[1],"&position=P&season=0")
+webpagers31 <- read_html(urlbp31)
+tblsbp31 <- webpagers31 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchBPtbl1 <- tblsbp31[[1]]
+PtchBPtbl1[is.na(PtchBPtbl1)] <- 0
+PtchBPtbl1$Pitches <- as.numeric(PtchBPtbl1$Pitches)
+StndrdBPtbl1$TBF <- as.numeric(StndrdBPtbl1$TBF)
+StndrdBPtbl1$SO <- as.numeric(StndrdBPtbl1$SO)
+StndrdBPtbl1$`2B` <- as.numeric(StndrdBPtbl1$`2B`)
+StndrdBPtbl1$`3B` <- as.numeric(StndrdBPtbl1$`3B`)
+StndrdBPtbl1$H <- as.numeric(StndrdBPtbl1$H)
+StndrdBPtbl1$BB <- as.numeric(StndrdBPtbl1$BB)
+StndrdBPtbl1$IBB <- as.numeric(StndrdBPtbl1$IBB)
+StndrdBPtbl1$HBP <- as.numeric(StndrdBPtbl1$HBP)
+StndrdBPtbl1$HR <- as.numeric(StndrdBPtbl1$HR)
+
+
+#RelieverTwo
+urlbp12 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[2],"&position=P&season=0")
+webpagers <- read_html(urlbp12)
+tblsbp12 <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBPtbl2 <- tblsbp12[[1]]
+StndrdBPtbl2[is.na(StndrdBPtbl2)] <- 0
+urlbp22 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[2])
+webpagers22 <- read_html(urlbp22)
+tblsbp22 <- webpagers22 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngBPtbl2 <- tblsbp22[[1]]
+FldngBPtbl2[is.na(FldngBPtbl2)] <- 0
+urlbp32 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[2],"&position=P&season=0")
+webpagers32 <- read_html(urlbp32)
+tblsbp32 <- webpagers32 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchBPtbl2 <- tblsbp32[[1]]
+PtchBPtbl2[is.na(PtchBPtbl2)] <- 0
+PtchBPtbl2$Pitches <- as.numeric(PtchBPtbl2$Pitches)
+StndrdBPtbl2$TBF <- as.numeric(StndrdBPtbl2$TBF)
+StndrdBPtbl2$SO <- as.numeric(StndrdBPtbl2$SO)
+StndrdBPtbl2$`2B` <- as.numeric(StndrdBPtbl2$`2B`)
+StndrdBPtbl2$`3B` <- as.numeric(StndrdBPtbl2$`3B`)
+StndrdBPtbl2$H <- as.numeric(StndrdBPtbl2$H)
+StndrdBPtbl2$BB <- as.numeric(StndrdBPtbl2$BB)
+StndrdBPtbl2$IBB <- as.numeric(StndrdBPtbl2$IBB)
+StndrdBPtbl2$HBP <- as.numeric(StndrdBPtbl2$HBP)
+StndrdBPtbl2$HR <- as.numeric(StndrdBPtbl2$HR)
+
+
+#RelieverThree
+urlbp13 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[3],"&position=P&season=0")
+webpagers <- read_html(urlbp13)
+tblsbp13 <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBPtbl3 <- tblsbp13[[1]]
+StndrdBPtbl3[is.na(StndrdBPtbl3)] <- 0
+urlbp23 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[3])
+webpagers23 <- read_html(urlbp23)
+tblsbp23 <- webpagers23 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngBPtbl3 <- tblsbp23[[1]]
+FldngBPtbl3[is.na(FldngBPtbl3)] <- 0
+urlbp33 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[3],"&position=P&season=0")
+webpagers33 <- read_html(urlbp33)
+tblsbp33 <- webpagers33 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchBPtbl3 <- tblsbp33[[1]]
+PtchBPtbl3[is.na(PtchBPtbl3)] <- 0
+PtchBPtbl3$Pitches <- as.numeric(PtchBPtbl3$Pitches)
+StndrdBPtbl3$TBF <- as.numeric(StndrdBPtbl3$TBF)
+StndrdBPtbl3$SO <- as.numeric(StndrdBPtbl3$SO)
+StndrdBPtbl3$`2B` <- as.numeric(StndrdBPtbl3$`2B`)
+StndrdBPtbl3$`3B` <- as.numeric(StndrdBPtbl3$`3B`)
+StndrdBPtbl3$H <- as.numeric(StndrdBPtbl3$H)
+StndrdBPtbl3$BB <- as.numeric(StndrdBPtbl3$BB)
+StndrdBPtbl3$IBB <- as.numeric(StndrdBPtbl3$IBB)
+StndrdBPtbl3$HBP <- as.numeric(StndrdBPtbl3$HBP)
+StndrdBPtbl3$HR <- as.numeric(StndrdBPtbl3$HR)
+
+
+#RelieverFour
+urlbp14 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[4],"&position=P&season=0")
+webpagers <- read_html(urlbp14)
+tblsbp14 <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBPtbl4 <- tblsbp14[[1]]
+StndrdBPtbl4[is.na(StndrdBPtbl4)] <- 0
+urlbp24 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[4])
+webpagers24 <- read_html(urlbp24)
+tblsbp24 <- webpagers24 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngBPtbl4 <- tblsbp24[[1]]
+FldngBPtbl4[is.na(FldngBPtbl4)] <- 0
+urlbp34 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[4],"&position=P&season=0")
+webpagers34 <- read_html(urlbp34)
+tblsbp34 <- webpagers34 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchBPtbl4 <- tblsbp34[[1]]
+PtchBPtbl4[is.na(PtchBPtbl4)] <- 0
+PtchBPtbl4$Pitches <- as.numeric(PtchBPtbl4$Pitches)
+StndrdBPtbl4$TBF <- as.numeric(StndrdBPtbl4$TBF)
+StndrdBPtbl4$SO <- as.numeric(StndrdBPtbl4$SO)
+StndrdBPtbl4$`2B` <- as.numeric(StndrdBPtbl4$`2B`)
+StndrdBPtbl4$`3B` <- as.numeric(StndrdBPtbl4$`3B`)
+StndrdBPtbl4$H <- as.numeric(StndrdBPtbl4$H)
+StndrdBPtbl4$BB <- as.numeric(StndrdBPtbl4$BB)
+StndrdBPtbl4$IBB <- as.numeric(StndrdBPtbl4$IBB)
+StndrdBPtbl4$HBP <- as.numeric(StndrdBPtbl4$HBP)
+StndrdBPtbl4$HR <- as.numeric(StndrdBPtbl4$HR)
+
+
+#RelieverFive
+urlbp15 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[5],"&position=P&season=0")
+webpagers <- read_html(urlbp15)
+tblsbp15 <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBPtbl5 <- tblsbp15[[1]]
+StndrdBPtbl5[is.na(StndrdBPtbl5)] <- 0
+urlbp25 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[5])
+webpagers25 <- read_html(urlbp25)
+tblsbp25 <- webpagers25 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngBPtbl5 <- tblsbp25[[1]]
+FldngBPtbl5[is.na(FldngBPtbl5)] <- 0
+urlbp35 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[5],"&position=P&season=0")
+webpagers35 <- read_html(urlbp35)
+tblsbp35 <- webpagers35 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchBPtbl5 <- tblsbp35[[1]]
+PtchBPtbl5[is.na(PtchBPtbl5)] <- 0
+PtchBPtbl5$Pitches <- as.numeric(PtchBPtbl5$Pitches)
+StndrdBPtbl5$TBF <- as.numeric(StndrdBPtbl5$TBF)
+StndrdBPtbl5$SO <- as.numeric(StndrdBPtbl5$SO)
+StndrdBPtbl5$`2B` <- as.numeric(StndrdBPtbl5$`2B`)
+StndrdBPtbl5$`3B` <- as.numeric(StndrdBPtbl5$`3B`)
+StndrdBPtbl5$H <- as.numeric(StndrdBPtbl5$H)
+StndrdBPtbl5$BB <- as.numeric(StndrdBPtbl5$BB)
+StndrdBPtbl5$IBB <- as.numeric(StndrdBPtbl5$IBB)
+StndrdBPtbl5$HBP <- as.numeric(StndrdBPtbl5$HBP)
+StndrdBPtbl5$HR <- as.numeric(StndrdBPtbl5$HR)
+
+
+#RelieverSix
+urlbp16 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[6],"&position=P&season=0")
+webpagers <- read_html(urlbp16)
+tblsbp16 <- webpagers %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason1_ctl00"]') %>% 
+        html_table(fill =TRUE)
+StndrdBPtbl6 <- tblsbp16[[1]]
+StndrdBPtbl6[is.na(StndrdBPtbl6)] <- 0
+urlbp26 <- paste0("https://www.fangraphs.com/statss.aspx?playerid=",Bullpen$playerID[6])
+webpagers26 <- read_html(urlbp26)
+tblsbp26 <- webpagers26 %>%
+        html_nodes(xpath='//table[@id="SeasonStats1_dgSeason8_ctl00"]') %>% 
+        html_table(fill =TRUE)
+FldngBPtbl6 <- tblsbp26[[1]]
+FldngBPtbl6[is.na(FldngBPtbl6)] <- 0
+urlbp36 <- paste0("https://www.fangraphs.com/statsplits.aspx?playerid=",Bullpen$playerID[6],"&position=P&season=0")
+webpagers36 <- read_html(urlbp36)
+tblsbp36 <- webpagers36 %>%
+        html_nodes(xpath='//table[@id="SeasonSplits1_dgSeason3_ctl00"]') %>% 
+        html_table(fill =TRUE)
+PtchBPtbl6 <- tblsbp36[[1]]
+PtchBPtbl6[is.na(PtchBPtbl6)] <- 0
+PtchBPtbl6$Pitches <- as.numeric(PtchBPtbl6$Pitches)
+StndrdBPtbl6$TBF <- as.numeric(StndrdBPtbl6$TBF)
+StndrdBPtbl6$SO <- as.numeric(StndrdBPtbl6$SO)
+StndrdBPtbl6$`2B` <- as.numeric(StndrdBPtbl6$`2B`)
+StndrdBPtbl6$`3B` <- as.numeric(StndrdBPtbl6$`3B`)
+StndrdBPtbl6$H <- as.numeric(StndrdBPtbl6$H)
+StndrdBPtbl6$BB <- as.numeric(StndrdBPtbl6$BB)
+StndrdBPtbl6$IBB <- as.numeric(StndrdBPtbl6$IBB)
+StndrdBPtbl6$HBP <- as.numeric(StndrdBPtbl6$HBP)
+StndrdBPtbl6$HR <- as.numeric(StndrdBPtbl6$HR)
+
+
+
+one <- matrix(0, 14, 1)
+dimnames(one)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "pitch", "K", "contact","out","hit","BB","1B","2B","3B","HR")
+  dimnames(one)[[2]] <- 1
+  
+
+SB1 <- (FldngBPtbl1$SB[FldngBPtbl1$Season=="Total"&FldngBPtbl1$Pos=="P"] + FldngBPtbl2$SB[FldngBPtbl2$Season=="Total"&FldngBPtbl2$Pos=="P"] + FldngBPtbl3$SB[FldngBPtbl3$Season=="Total"&FldngBPtbl3$Pos=="P"] + FldngBPtbl4$SB[FldngBPtbl4$Season=="Total"&FldngBPtbl4$Pos=="P"] + FldngBPtbl5$SB[FldngBPtbl5$Season=="Total"&FldngBPtbl5$Pos=="P"] + FldngBPtbl6$SB[FldngBPtbl6$Season=="Total"&FldngBPtbl6$Pos=="P"])/6
+CS1 <- (FldngBPtbl1$CS[FldngBPtbl1$Season=="Total"&FldngBPtbl1$Pos=="P"] + FldngBPtbl2$CS[FldngBPtbl2$Season=="Total"&FldngBPtbl2$Pos=="P"] + FldngBPtbl3$CS[FldngBPtbl3$Season=="Total"&FldngBPtbl3$Pos=="P"] + FldngBPtbl4$CS[FldngBPtbl4$Season=="Total"&FldngBPtbl4$Pos=="P"] + FldngBPtbl5$CS[FldngBPtbl5$Season=="Total"&FldngBPtbl5$Pos=="P"] + FldngBPtbl6$CS[FldngBPtbl6$Season=="Total"&FldngBPtbl6$Pos=="P"])/6
+stay1 <- ((FldngBPtbl1$Inn[FldngBPtbl1$Season=="Total"&FldngBPtbl1$Pos=="P"]*1.44319)+(FldngBPtbl2$Inn[FldngBPtbl2$Season=="Total"&FldngBPtbl2$Pos=="P"]*1.44319)+(FldngBPtbl3$Inn[FldngBPtbl3$Season=="Total"&FldngBPtbl3$Pos=="P"]*1.44319)+(FldngBPtbl4$Inn[FldngBPtbl4$Season=="Total"&FldngBPtbl4$Pos=="P"]*1.44319)+(FldngBPtbl5$Inn[FldngBPtbl5$Season=="Total"&FldngBPtbl5$Pos=="P"]*1.44319)+(FldngBPtbl6$Inn[FldngBPtbl6$Season=="Total"&FldngBPtbl6$Pos=="P"]*1.44319))/6
+WP1 <- (FldngBPtbl1$WP[FldngBPtbl1$Season=="Total"&FldngBPtbl1$Pos=="P"]+FldngBPtbl2$WP[FldngBPtbl2$Season=="Total"&FldngBPtbl2$Pos=="P"]+FldngBPtbl3$WP[FldngBPtbl3$Season=="Total"&FldngBPtbl3$Pos=="P"]+FldngBPtbl4$WP[FldngBPtbl4$Season=="Total"&FldngBPtbl4$Pos=="P"]+FldngBPtbl5$WP[FldngBPtbl5$Season=="Total"&FldngBPtbl5$Pos=="P"]+FldngBPtbl6$WP[FldngBPtbl6$Season=="Total"&FldngBPtbl6$Pos=="P"])/6
+pitch1 <- (PtchBPtbl1$Pitches[PtchBPtbl1$Handedness=="vs L"]+PtchBPtbl1$Pitches[PtchBPtbl1$Handedness=="vs R"]+PtchBPtbl2$Pitches[PtchBPtbl2$Handedness=="vs L"]+PtchBPtbl2$Pitches[PtchBPtbl2$Handedness=="vs R"]+PtchBPtbl3$Pitches[PtchBPtbl3$Handedness=="vs L"]+PtchBPtbl3$Pitches[PtchBPtbl3$Handedness=="vs R"]+PtchBPtbl4$Pitches[PtchBPtbl4$Handedness=="vs L"]+PtchBPtbl4$Pitches[PtchBPtbl4$Handedness=="vs R"]+PtchBPtbl5$Pitches[PtchBPtbl5$Handedness=="vs L"]+PtchBPtbl5$Pitches[PtchBPtbl5$Handedness=="vs R"]+PtchBPtbl6$Pitches[PtchBPtbl6$Handedness=="vs L"]+PtchBPtbl6$Pitches[PtchBPtbl6$Handedness=="vs R"])/6
+K1 <- (StndrdBPtbl1$SO[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$SO[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl2$SO[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$SO[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl3$SO[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$SO[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl4$SO[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$SO[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl5$SO[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$SO[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl6$SO[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$SO[StndrdBPtbl6$Handedness=="vs R"])/6
+twoB1 <- (StndrdBPtbl1$`2B`[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$`2B`[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl2$`2B`[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$`2B`[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl3$`2B`[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$`2B`[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl4$`2B`[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$`2B`[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl5$`2B`[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$`2B`[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl6$`2B`[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$`2B`[StndrdBPtbl6$Handedness=="vs R"])/6
+threeB1 <- (StndrdBPtbl1$`3B`[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$`3B`[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl2$`3B`[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$`3B`[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl3$`3B`[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$`3B`[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl4$`3B`[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$`3B`[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl5$`3B`[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$`3B`[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl6$`3B`[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$`3B`[StndrdBPtbl6$Handedness=="vs R"])/6
+HR1 <- (StndrdBPtbl1$HR[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$HR[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl2$HR[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$HR[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl3$HR[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$HR[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl4$HR[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$HR[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl5$HR[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$HR[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl6$HR[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$HR[StndrdBPtbl6$Handedness=="vs R"])/6
+oneB1 <- ((StndrdBPtbl1$H[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$H[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl2$H[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$H[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl3$H[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$H[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl4$H[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$H[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl5$H[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$H[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl6$H[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$H[StndrdBPtbl6$Handedness=="vs R"])/6) - HR1 - threeB1 - twoB1
+BB1 <- (StndrdBPtbl1$BB[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$BB[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl1$IBB[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$IBB[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl1$HBP[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$HBP[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl2$BB[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$BB[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl2$IBB[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$IBB[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl2$HBP[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$HBP[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl3$BB[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$BB[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl3$IBB[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$IBB[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl3$HBP[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$HBP[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl4$BB[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$BB[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl4$IBB[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$IBB[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl4$HBP[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$HBP[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl5$BB[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$BB[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl5$IBB[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$IBB[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl5$HBP[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$HBP[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl6$BB[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$BB[StndrdBPtbl6$Handedness=="vs R"]+StndrdBPtbl6$IBB[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$IBB[StndrdBPtbl6$Handedness=="vs R"]+StndrdBPtbl6$HBP[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$HBP[StndrdBPtbl6$Handedness=="vs R"])/6
+contact1 <-  ((StndrdBPtbl1$TBF[StndrdBPtbl1$Handedness=="vs L"]+StndrdBPtbl1$TBF[StndrdBPtbl1$Handedness=="vs R"]+StndrdBPtbl2$TBF[StndrdBPtbl2$Handedness=="vs L"]+StndrdBPtbl2$TBF[StndrdBPtbl2$Handedness=="vs R"]+StndrdBPtbl3$TBF[StndrdBPtbl3$Handedness=="vs L"]+StndrdBPtbl3$TBF[StndrdBPtbl3$Handedness=="vs R"]+StndrdBPtbl4$TBF[StndrdBPtbl4$Handedness=="vs L"]+StndrdBPtbl4$TBF[StndrdBPtbl4$Handedness=="vs R"]+StndrdBPtbl5$TBF[StndrdBPtbl5$Handedness=="vs L"]+StndrdBPtbl5$TBF[StndrdBPtbl5$Handedness=="vs R"]+StndrdBPtbl6$TBF[StndrdBPtbl6$Handedness=="vs L"]+StndrdBPtbl6$TBF[StndrdBPtbl6$Handedness=="vs R"])/6) - K1
+hit1 <- twoB1 + oneB1 + threeB1 + HR1 + BB1
+out1 <- contact1 - hit1
+
+
+one["SB",] <- SB1/(CS1+SB1+stay1)
+one["CS",] <- CS1/(CS1+SB1+stay1)
+one["stay",] <- stay1/(CS1+SB1+stay1)
+one["WP",] <- WP1/(pitch1+WP1)
+one["pitch",] <- pitch1/(pitch1+WP1)
+one["K",] <- K1/(K1+contact1)
+one["2B",] <- twoB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["3B",] <- threeB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["HR",] <- HR1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["1B",] <- oneB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["BB",] <- BB1/(twoB1+HR1+oneB1+BB1+threeB1)
+one["contact",] <-  contact1/(K1+contact1)
+one["hit",] <- hit1/(hit1+out1)
+one["out",] <- out1/(hit1+out1)
+
+
+
+
+Bullpen <- list(one=one)
+}
+
+```
+
+
+
+
+
+#Set up the Set-up
+
+```{r}
+LineupMKR <- function(BattingOrder,StartingPitcher,Bullpen,Catcher){
+  ##Remember to weight the bullpens and the starting pitchers accordingly and that playername8 is correct but the rest need to be modelled after it
+  
+  starterweight <- StartingPitcher$one["Inn/G",]/9
+  bullpenweight <- 1- starterweight
+  
+  playername1 <- matrix(0, 19, 1)
+  dimnames(playername1)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername1)[[2]] <- 1
+  #stealing a base
+  playername1["SB",] <- (BattingOrder$one["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername1["stay",] <- (BattingOrder$one["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername1["CS",] <- (BattingOrder$one["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername1["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername1["PB",] <- (Catcher$one["PB",]) 
+  playername1["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername1["K",] <- (BattingOrder$one["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername1["contact",] <- (BattingOrder$one["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername1["GIDP",] <- (BattingOrder$one["GIDP",] )
+  playername1["SFSH",] <- (BattingOrder$one["SFSH",])
+  playername1["outorhit",] <- (BattingOrder$one["outorhit",])
+  #Contact
+  playername1["out",] <- (BattingOrder$one["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername1["hit",] <- (BattingOrder$one["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername1["BB",] <- (BattingOrder$one["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername1["ROE",] <- (BattingOrder$one["ROE",])
+  playername1["1B",] <- (BattingOrder$one["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername1["2B",] <- (BattingOrder$one["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername1["3B",] <- (BattingOrder$one["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername1["HR",] <- (BattingOrder$one["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  
+
+
+playername2 <- matrix(0, 19, 1)
+  dimnames(playername2)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername2)[[2]] <- 1
+  #stealing a base
+  playername2["SB",] <- (BattingOrder$two["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername2["stay",] <- (BattingOrder$two["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername2["CS",] <- (BattingOrder$two["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername2["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername2["PB",] <- (Catcher$one["PB",]) 
+  playername2["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername2["K",] <- (BattingOrder$two["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername2["contact",] <- (BattingOrder$two["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername2["GIDP",] <- (BattingOrder$two["GIDP",] )
+  playername2["SFSH",] <- (BattingOrder$two["SFSH",])
+  playername2["outorhit",] <- (BattingOrder$two["outorhit",])
+  #Contact
+  playername2["out",] <- (BattingOrder$two["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername2["hit",] <- (BattingOrder$two["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername2["BB",] <- (BattingOrder$two["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername2["ROE",] <- (BattingOrder$two["ROE",])
+  playername2["1B",] <- (BattingOrder$two["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername2["2B",] <- (BattingOrder$two["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername2["3B",] <- (BattingOrder$two["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername2["HR",] <- (BattingOrder$two["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2 
+  
+  
+playername3 <- matrix(0, 19, 1)
+  dimnames(playername3)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername3)[[2]] <- 1
+  #stealing a base
+  playername3["SB",] <- (BattingOrder$three["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername3["stay",] <- (BattingOrder$three["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername3["CS",] <- (BattingOrder$three["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername3["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername3["PB",] <- (Catcher$one["PB",]) 
+  playername3["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername3["K",] <- (BattingOrder$three["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername3["contact",] <- (BattingOrder$three["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername3["GIDP",] <- (BattingOrder$three["GIDP",] )
+  playername3["SFSH",] <- (BattingOrder$three["SFSH",])
+  playername3["outorhit",] <- (BattingOrder$three["outorhit",])
+  #Contact
+  playername3["out",] <- (BattingOrder$three["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername3["hit",] <- (BattingOrder$three["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername3["BB",] <- (BattingOrder$three["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername3["ROE",] <- (BattingOrder$three["ROE",])
+  playername3["1B",] <- (BattingOrder$three["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername3["2B",] <- (BattingOrder$three["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername3["3B",] <- (BattingOrder$three["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername3["HR",] <- (BattingOrder$three["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  
+  
+  
+playername4 <- matrix(0, 19, 1)
+  dimnames(playername4)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername4)[[2]] <- 1
+  #stealing a base
+  playername4["SB",] <- (BattingOrder$four["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername4["stay",] <- (BattingOrder$four["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername4["CS",] <- (BattingOrder$four["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername4["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername4["PB",] <- (Catcher$one["PB",]) 
+  playername4["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername4["K",] <- (BattingOrder$four["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername4["contact",] <- (BattingOrder$four["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername4["GIDP",] <- (BattingOrder$four["GIDP",] )
+  playername4["SFSH",] <- (BattingOrder$four["SFSH",])
+  playername4["outorhit",] <- (BattingOrder$four["outorhit",])
+  #Contact
+  playername4["out",] <- (BattingOrder$four["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername4["hit",] <- (BattingOrder$four["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername4["BB",] <- (BattingOrder$four["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername4["ROE",] <- (BattingOrder$four["ROE",])
+  playername4["1B",] <- (BattingOrder$four["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername4["2B",] <- (BattingOrder$four["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername4["3B",] <- (BattingOrder$four["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername4["HR",] <- (BattingOrder$four["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  
+  
+  
+playername5 <- matrix(0, 19, 1)
+  dimnames(playername5)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername5)[[2]] <- 1
+  #stealing a base
+  playername5["SB",] <- (BattingOrder$five["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername5["stay",] <- (BattingOrder$five["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername5["CS",] <- (BattingOrder$five["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername5["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername5["PB",] <- (Catcher$one["PB",]) 
+  playername5["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername5["K",] <- (BattingOrder$five["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername5["contact",] <- (BattingOrder$five["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername5["GIDP",] <- (BattingOrder$five["GIDP",] )
+  playername5["SFSH",] <- (BattingOrder$five["SFSH",])
+  playername5["outorhit",] <- (BattingOrder$five["outorhit",])
+  #Contact
+  playername5["out",] <- (BattingOrder$five["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername5["hit",] <- (BattingOrder$five["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername5["BB",] <- (BattingOrder$five["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername5["ROE",] <- (BattingOrder$five["ROE",])
+  playername5["1B",] <- (BattingOrder$five["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername5["2B",] <- (BattingOrder$five["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername5["3B",] <- (BattingOrder$five["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername5["HR",] <- (BattingOrder$five["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  
+  
+  
+  
+playername6 <- matrix(0, 19, 1)
+  dimnames(playername6)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername6)[[2]] <- 1
+  #stealing a base
+  playername6["SB",] <- (BattingOrder$six["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername6["stay",] <- (BattingOrder$six["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername6["CS",] <- (BattingOrder$six["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername6["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername6["PB",] <- (Catcher$one["PB",]) 
+  playername6["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername6["K",] <- (BattingOrder$six["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername6["contact",] <- (BattingOrder$six["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername6["GIDP",] <- (BattingOrder$six["GIDP",] )
+  playername6["SFSH",] <- (BattingOrder$six["SFSH",])
+  playername6["outorhit",] <- (BattingOrder$six["outorhit",])
+  #Contact
+  playername6["out",] <- (BattingOrder$six["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername6["hit",] <- (BattingOrder$six["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername6["BB",] <- (BattingOrder$six["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername6["ROE",] <- (BattingOrder$six["ROE",])
+  playername6["1B",] <- (BattingOrder$six["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername6["2B",] <- (BattingOrder$six["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername6["3B",] <- (BattingOrder$six["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername6["HR",] <- (BattingOrder$six["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  
+  
+  
+  
+playername7 <- matrix(0, 19, 1)
+  dimnames(playername7)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername7)[[2]] <- 1
+  #stealing a base
+  playername7["SB",] <- (BattingOrder$seven["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername7["stay",] <- (BattingOrder$seven["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername7["CS",] <- (BattingOrder$seven["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername7["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername7["PB",] <- (Catcher$one["PB",]) 
+  playername7["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername7["K",] <- (BattingOrder$seven["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername7["contact",] <- (BattingOrder$seven["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername7["GIDP",] <- (BattingOrder$seven["GIDP",] )
+  playername7["SFSH",] <- (BattingOrder$seven["SFSH",])
+  playername7["outorhit",] <- (BattingOrder$seven["outorhit",])
+  #Contact
+  playername7["out",] <- (BattingOrder$seven["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername7["hit",] <- (BattingOrder$seven["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername7["BB",] <- (BattingOrder$seven["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername7["ROE",] <- (BattingOrder$seven["ROE",])
+  playername7["1B",] <- (BattingOrder$seven["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername7["2B",] <- (BattingOrder$seven["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername7["3B",] <- (BattingOrder$seven["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername7["HR",] <- (BattingOrder$seven["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  
+  
+  
+  
+  
+playername8 <- matrix(0, 19, 1)
+  dimnames(playername8)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  dimnames(playername8)[[2]] <- 1
+  #stealing a base
+  playername8["SB",] <- (BattingOrder$eight["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername8["stay",] <- (BattingOrder$eight["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername8["CS",] <- (BattingOrder$eight["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername8["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername8["PB",] <- (Catcher$one["PB",]) 
+  playername8["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername8["K",] <- (BattingOrder$eight["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername8["contact",] <- (BattingOrder$eight["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername8["GIDP",] <- (BattingOrder$eight["GIDP",] )
+  playername8["SFSH",] <- (BattingOrder$eight["SFSH",])
+  playername8["outorhit",] <- (BattingOrder$eight["outorhit",])
+  #Contact
+  playername8["out",] <- (BattingOrder$eight["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername8["hit",] <- (BattingOrder$eight["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername8["BB",] <- (BattingOrder$eight["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername8["ROE",] <- (BattingOrder$eight["ROE",])
+  playername8["1B",] <- (BattingOrder$eight["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername8["2B",] <- (BattingOrder$eight["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername8["3B",] <- (BattingOrder$eight["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername8["HR",] <- (BattingOrder$eight["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  
+  playername9 <- matrix(0, 19, 1)
+  dimnames(playername9)[[1]] <- c("SB", "stay", "CS", "WP",
+                       "PB", "pitch", "K", "contact","GIDP","SFSH","outorhit","out","hit","BB","1B","2B","3B","HR","ROE")
+  
+  if (is.na(BattingOrder$nine["hit",]==0)==TRUE|is.na(BattingOrder$nine["K",]==0)==TRUE|is.na(BattingOrder$nine["SB",]==0)==TRUE|is.na(BattingOrder$nine["BB",]==0)==TRUE|BattingOrder$nine["K",]==0){
+    playername9["SB",] <- 0
+  playername9["stay",] <- 1
+  playername9["CS",] <- 0
+  #where the wild pitch goes
+  playername9["WP",] <- 0
+  playername9["PB",] <- 0
+  playername9["pitch",] <- 1
+  #to K or not to K
+  playername9["K",] <- .60
+  playername9["contact",] <- .40
+  #two or one or one or none
+  playername9["GIDP",] <- .33
+  playername9["SFSH",] <- .33
+  playername9["outorhit",] <- .33
+  #Contact
+  playername9["out",] <- .75
+  playername9["hit",] <- .25
+  #No Out Go Wild
+  playername9["BB",] <- .75
+  playername9["ROE",] <- .12
+  playername9["1B",] <- .11
+  playername9["2B",] <- .01
+  playername9["3B",] <- 0
+  playername9["HR",] <- .01
+  }else{
+    dimnames(playername9)[[2]] <- 1
+  #stealing a base
+  playername9["SB",] <- (BattingOrder$nine["SB",] +  ((StartingPitcher$one["SB",]*starterweight) + (bullpenweight*Bullpen$one["SB",]))+ Catcher$one["SB",])/ 3
+  playername9["stay",] <- (BattingOrder$nine["stay",] +  ((StartingPitcher$one["stay",]*starterweight) + (bullpenweight*Bullpen$one["stay",])) + Catcher$one["stay",]) / 3
+  playername9["CS",] <- (BattingOrder$nine["CS",] +  ((StartingPitcher$one["CS",]*starterweight) + (bullpenweight*Bullpen$one["CS",])) + Catcher$one["CS",]) / 3
+  #where the wild pitch goes
+  playername9["WP",] <- (((StartingPitcher$one["WP",]*starterweight) + (bullpenweight*Bullpen$one["WP",])))
+  playername9["PB",] <- (Catcher$one["PB",]) 
+  playername9["pitch",] <- (((StartingPitcher$one["pitch",]*starterweight) + (bullpenweight*Bullpen$one["pitch",])) + Catcher$one["pitch",]) /  2
+  #to K or not to K
+  playername9["K",] <- (BattingOrder$nine["K",] + ((StartingPitcher$one["K",]*starterweight) + (bullpenweight*Bullpen$one["K",]))) / 2
+  playername9["contact",] <- (BattingOrder$nine["contact",] +  ((StartingPitcher$one["contact",]*starterweight) + (bullpenweight*Bullpen$one["contact",]))) / 2
+  #two or one or one or none
+  playername9["GIDP",] <- (BattingOrder$nine["GIDP",] )
+  playername9["SFSH",] <- (BattingOrder$nine["SFSH",])
+  playername9["outorhit",] <- (BattingOrder$nine["outorhit",])
+  #Contact
+  playername9["out",] <- (BattingOrder$nine["out",] +  ((StartingPitcher$one["out",]*starterweight) + (bullpenweight*Bullpen$one["out",]))) / 2
+  playername9["hit",] <- (BattingOrder$nine["hit",] +  ((StartingPitcher$one["hit",]*starterweight) + (bullpenweight*Bullpen$one["hit",]))) / 2
+  #No Out Go Wild
+  playername9["BB",] <- (BattingOrder$nine["BB",] +  ((StartingPitcher$one["BB",]*starterweight) + (bullpenweight*Bullpen$one["BB",]))) / 2
+  playername9["ROE",] <- (BattingOrder$nine["ROE",])
+  playername9["1B",] <- (BattingOrder$nine["1B",] +  ((StartingPitcher$one["1B",]*starterweight) + (bullpenweight*Bullpen$one["1B",]))) / 2
+  playername9["2B",] <- (BattingOrder$nine["2B",] +  ((StartingPitcher$one["2B",]*starterweight) + (bullpenweight*Bullpen$one["2B",]))) / 2
+  playername9["3B",] <- (BattingOrder$nine["3B",] +  ((StartingPitcher$one["3B",]*starterweight) + (bullpenweight*Bullpen$one["3B",]))) / 2
+  playername9["HR",] <- (BattingOrder$nine["HR",] +  ((StartingPitcher$one["HR",]*starterweight) + (bullpenweight*Bullpen$one["HR",]))) / 2
+  }
+    
+  
+  
+  
+  list(playername1=playername1, playername2=playername2, playername3=playername3, playername4=playername4, playername5=playername5, playername6=playername6, playername7=playername7, playername8=playername8, playername9=playername9)
+  
+}
+
+```
+
+
+#Set up the Simulator
+```{r pressure, echo=FALSE}
+
+runs_setup <- function(lineup){
+  # based on 2015 season data
+  Prob_Single <- matrix(0, 8, 8)
+  dimnames(Prob_Single)[[1]] <- c("000", "100", "010", "001",
+                       "110", "101", "011", "111")
+  dimnames(Prob_Single)[[2]] <- c("000", "100", "010", "001",
+                       "110", "101", "011", "111")
+  Prob_Single["000", "100"] <- 1
+  Prob_Single["100", c("101", "110")] <- 
+       round(c(1411,  3940) / (1411 + 3940), 3)
+  Prob_Single["010", c("100", "101")] <- 
+       round(c(1044,  768) / (1044 + 768), 3)
+  Prob_Single["001", "100"] <- 1 
+  Prob_Single["110", c("101", "110", "111")] <- 
+       round(c(403, 605, 675) / (403 + 605 + 675), 3)
+  Prob_Single["101", c("101", "110")] <- 
+       round(c(178, 583) / (178 + 583), 3)
+  Prob_Single["011", c("100", "101")] <- 
+       round(c(215, 200) / (215 + 200), 3)
+  Prob_Single["111", c("101", "110", "111")] <- 
+       round(c(137, 211, 266) / (137 + 211 + 266), 3)
+
+  Prob_Double <- matrix(0, 8, 8)
+  dimnames(Prob_Double)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_Double)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_Double[c("000", "010", "001", "011"), "010"] <- 1 
+  Prob_Double["100", c("011", "010")] <- 
+       round(c(817, 591) / (817 + 591), 3)
+  Prob_Double["110", c("010", "011")] <- 
+       round(c(212, 260) / (212 + 260), 3)
+  Prob_Double["101", c("010", "011")] <- 
+       round(c(107, 132) / (107 + 132), 3)
+  Prob_Double["111", c("010", "011")] <- 
+      round(c(74, 95) / (74 + 95), 3)
+  
+  Prob_Walk <- matrix(0, 8, 8)
+  dimnames(Prob_Walk)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_Walk)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_Walk["000", "100"] <- 1
+  Prob_Walk["100", "110"] <- 1
+  Prob_Walk["010", "110"] <- 1
+  Prob_Walk["001", "101"] <- 1
+  Prob_Walk[c("110", "101", "011", "111"), "111"] <- 1
+  
+  
+  
+  Prob_SB <- matrix(0, 8, 8)
+  dimnames(Prob_SB)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_SB)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_SB["100", "010"] <- 1
+  Prob_SB["010", "001"] <- 1
+  Prob_SB["101", "011"] <- 1
+  Prob_SB["000", "000"] <- 1
+  Prob_SB["111", "111"] <- 1
+  Prob_SB["011", "011"] <- 1
+  Prob_SB["001", "001"] <- 1
+  Prob_SB["110", "110"] <- 1
+  
+  Prob_SB_OUT <- matrix(0, 8, 8)
+  dimnames(Prob_SB_OUT)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_SB_OUT)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_SB_OUT["100", "000"] <- 1
+  Prob_SB_OUT["010", "000"] <- 1
+  Prob_SB_OUT["101", "001"] <- 1
+  Prob_SB_OUT["000", "000"] <- 1
+  Prob_SB_OUT["111", "111"] <- 1
+  Prob_SB_OUT["011", "011"] <- 1
+  Prob_SB_OUT["001", "001"] <- 1
+  Prob_SB_OUT["110", "110"] <- 1
+  
+  Prob_WP_PB <- matrix(0, 8, 8)
+  dimnames(Prob_WP_PB)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_WP_PB)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_WP_PB["100", "010"] <- 1
+  Prob_WP_PB["010", "001"] <- 1
+  Prob_WP_PB["101", "010"] <- 1
+  Prob_WP_PB["000", "000"] <- 1
+  Prob_WP_PB["111", "011"] <- 1
+  Prob_WP_PB["011", "001"] <- 1
+  Prob_WP_PB["001", "000"] <- 1
+  Prob_WP_PB["110", "011"] <- 1
+  
+  Prob_GIDP <- matrix(0, 8, 8)
+  dimnames(Prob_GIDP)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_GIDP)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_GIDP["100", "000"] <- 1
+  Prob_GIDP["110", c("100","001","010")] <- round(c(817, 591, 100) / (817 + 591 + 100), 3)
+  Prob_GIDP["101", c("010","001","100")] <-  round(c(591, 900, 100) / (900 + 591 + 100), 3)
+  Prob_GIDP["000", "000"] <- 1
+  Prob_GIDP["111", c("011","101","110","100","010","001")] <- round(c(591, 900, 100, 100, 95, 87) / (900 +   591 + 100 + 100 + 95 + 87), 3)
+  Prob_GIDP["011", c("010","000")] <- round(c(591, 900) / (900 + 591), 3)
+  Prob_GIDP["001", "000"] <- 1
+  Prob_GIDP["010", "000"] <- 1
+  
+  Prob_ROE <- matrix(0, 8, 8)
+  dimnames(Prob_ROE)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_ROE)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_ROE["100",  c("010","001","110","011","101")] <- round(c(591, 900, 100, 95, 87) / (900 +   591 + 100  + 95 + 87), 3)
+  Prob_ROE["110", c("101","011","111","110")] <- round(c(817, 591, 100, 86) / (817 + 591 + 100 + 86), 3)
+  Prob_ROE["101", c("111","011","110")] <-  round(c(591, 900, 100) / (900 + 591 + 100), 3)
+  Prob_ROE["000", c("100","010")] <- round(c(591, 900) / (900 + 591), 3)
+  Prob_ROE["111", c("011","110","101","111")] <- round(c(591, 900, 100, 87) / (900 +   591 + 100 + 87), 3)
+  Prob_ROE["011", c("010","101","100")] <- round(c(591, 900, 765) / (900 + 591 +765), 3)
+  Prob_ROE["001", c("100","010")] <- round(c(591, 900) / (900 + 591), 3)
+  Prob_ROE["010", c("100","010", "101")] <- round(c(591, 900, 765) / (900 + 591 +765), 3)
+  
+  Prob_SF_SH <- matrix(0, 8, 8)
+  dimnames(Prob_SF_SH)[[1]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  dimnames(Prob_SF_SH)[[2]] <- c("000", "100", "010", "001",
+                                "110", "101", "011", "111")
+  Prob_SF_SH["100", "010"] <- 1
+  Prob_SF_SH["110", "011"] <- 1
+  Prob_SF_SH["101", c("010","011","100")] <-  round(c(591, 900, 100) / (900 + 591 + 100), 3)
+  Prob_SF_SH["000", "000"] <- 1
+  Prob_SF_SH["111", c("011","110","101")] <- round(c(591, 900, 100) / (900 +   591 + 100), 3)
+  Prob_SF_SH["011", c("010","001")] <- round(c(591, 900) / (900 + 591), 3)
+  Prob_SF_SH["001", "000"] <- 1
+  Prob_SF_SH["010", "001"] <- 1
+
+  # outcomes are out, walk, single, double, triple, home run
+  probsb <- matrix(0, 10, 3)
+  dimnames(probsb)[[1]] <- c(1,2,3,4,5,6,7,8,9,10)
+  dimnames(probsb)[[2]] <- c("SB","No SB","OUT")
+  probsb[1,"SB"] <- lineup$playername1["SB",]
+  probsb[1,"No SB"] <- lineup$playername1["stay",]
+  probsb[1,"OUT"] <- lineup$playername1["CS",]
+  probsb[2,"SB"] <- lineup$playername2["SB",]
+  probsb[2,"No SB"] <- lineup$playername2["stay",]
+  probsb[2,"OUT"] <- lineup$playername2["CS",]
+  probsb[3,"SB"] <- lineup$playername3["SB",]
+  probsb[3,"No SB"] <- lineup$playername3["stay",]
+  probsb[3,"OUT"] <- lineup$playername3["CS",]
+  probsb[4,"SB"] <- lineup$playername4["SB",]
+  probsb[4,"No SB"] <- lineup$playername4["stay",]
+  probsb[4,"OUT"] <- lineup$playername4["CS",]
+  probsb[5,"SB"] <- lineup$playername5["SB",]
+  probsb[5,"No SB"] <- lineup$playername5["stay",]
+  probsb[5,"OUT"] <- lineup$playername5["CS",]
+  probsb[6,"SB"] <- lineup$playername6["SB",]
+  probsb[6,"No SB"] <- lineup$playername6["stay",]
+  probsb[6,"OUT"] <- lineup$playername6["CS",]
+  probsb[7,"SB"] <- lineup$playername7["SB",]
+  probsb[7,"No SB"] <- lineup$playername7["stay",]
+  probsb[7,"OUT"] <- lineup$playername7["CS",]
+  probsb[8,"SB"] <- lineup$playername8["SB",]
+  probsb[8,"No SB"] <- lineup$playername8["stay",]
+  probsb[8,"OUT"] <- lineup$playername8["CS",]
+  probsb[9,"SB"] <- lineup$playername9["SB",]
+  probsb[9,"No SB"] <- lineup$playername9["stay",]
+  probsb[9,"OUT"] <- lineup$playername9["CS",]
+  probsb[10,"SB"] <- 0
+  probsb[10,"No SB"] <- 1
+  probsb[10,"OUT"] <- 0
+  
+  probwppb <- c(lineup$playername1["WP",], lineup$playername1["PB",],
+          lineup$playername1["pitch",])
+  probwppb <- probwppb / sum(probwppb)
+  names(probwppb) <- c("WP", "PB", "pitch")
+  
+  probK <- matrix(0, 9, 2)
+  dimnames(probK)[[1]] <- c(1,2,3,4,5,6,7,8,9)
+  dimnames(probK)[[2]] <- c("K","contact")
+  probK[1,"K"] <- lineup$playername1["K",]
+  probK[1,"contact"] <- lineup$playername1["contact",]
+  probK[2,"K"] <- lineup$playername2["K",]
+  probK[2,"contact"] <- lineup$playername2["contact",]
+  probK[3,"K"] <- lineup$playername3["K",]
+  probK[3,"contact"] <- lineup$playername3["contact",]
+  probK[4,"K"] <- lineup$playername4["K",]
+  probK[4,"contact"] <- lineup$playername4["contact",]
+  probK[5,"K"] <- lineup$playername5["K",]
+  probK[5,"contact"] <- lineup$playername5["contact",]
+  probK[6,"K"] <- lineup$playername6["K",]
+  probK[6,"contact"] <- lineup$playername6["contact",]
+  probK[7,"K"] <- lineup$playername7["K",]
+  probK[7,"contact"] <- lineup$playername7["contact",]
+  probK[8,"K"] <- lineup$playername8["K",]
+  probK[8,"contact"] <- lineup$playername8["contact",]
+  probK[9,"K"] <- lineup$playername9["K",]
+  probK[9,"contact"] <- lineup$playername9["contact",]
+  
+  
+  probout <- matrix(0, 9, 3)
+  dimnames(probout)[[1]] <- c(1,2,3,4,5,6,7,8,9)
+  dimnames(probout)[[2]] <- c("GIDP","SF/SH","out/hit")
+  probout[1,"GIDP"] <- lineup$playername1["GIDP",]
+  probout[1,"SF/SH"] <- lineup$playername1["SFSH",]
+  probout[1,"out/hit"] <- lineup$playername1["outorhit",]
+  probout[2,"GIDP"] <- lineup$playername2["GIDP",]
+  probout[2,"SF/SH"] <- lineup$playername2["SFSH",]
+  probout[2,"out/hit"] <- lineup$playername2["outorhit",]
+  probout[3,"GIDP"] <- lineup$playername3["GIDP",]
+  probout[3,"SF/SH"] <- lineup$playername3["SFSH",]
+  probout[3,"out/hit"] <- lineup$playername3["outorhit",]
+  probout[4,"GIDP"] <- lineup$playername4["GIDP",]
+  probout[4,"SF/SH"] <- lineup$playername4["SFSH",]
+  probout[4,"out/hit"] <- lineup$playername4["outorhit",]
+  probout[5,"GIDP"] <- lineup$playername5["GIDP",]
+  probout[5,"SF/SH"] <- lineup$playername5["SFSH",]
+  probout[5,"out/hit"] <- lineup$playername5["outorhit",]
+  probout[6,"GIDP"] <- lineup$playername6["GIDP",]
+  probout[6,"SF/SH"] <- lineup$playername6["SFSH",]
+  probout[6,"out/hit"] <- lineup$playername6["outorhit",]
+  probout[7,"GIDP"] <- lineup$playername7["GIDP",]
+  probout[7,"SF/SH"] <- lineup$playername7["SFSH",]
+  probout[7,"out/hit"] <- lineup$playername7["outorhit",]
+  probout[8,"GIDP"] <- lineup$playername8["GIDP",]
+  probout[8,"SF/SH"] <- lineup$playername8["SFSH",]
+  probout[8,"out/hit"] <- lineup$playername8["outorhit",]
+  probout[9,"GIDP"] <- lineup$playername9["GIDP",]
+  probout[9,"SF/SH"] <- lineup$playername9["SFSH",]
+  probout[9,"out/hit"] <- lineup$playername9["outorhit",]
+  
+  proboutorhit <- matrix(0, 9, 2)
+  dimnames(proboutorhit)[[1]] <- c(1,2,3,4,5,6,7,8,9)
+  dimnames(proboutorhit)[[2]] <- c("out","hit")
+  proboutorhit[1,"out"] <- lineup$playername1["out",]
+  proboutorhit[1,"hit"] <- lineup$playername1["hit",]
+  proboutorhit[2,"out"] <- lineup$playername2["out",]
+  proboutorhit[2,"hit"] <- lineup$playername2["hit",]
+  proboutorhit[3,"out"] <- lineup$playername3["out",]
+  proboutorhit[3,"hit"] <- lineup$playername3["hit",]
+  proboutorhit[4,"out"] <- lineup$playername4["out",]
+  proboutorhit[4,"hit"] <- lineup$playername4["hit",]
+  proboutorhit[5,"out"] <- lineup$playername5["out",]
+  proboutorhit[5,"hit"] <- lineup$playername5["hit",]
+  proboutorhit[6,"out"] <- lineup$playername6["out",]
+  proboutorhit[6,"hit"] <- lineup$playername6["hit",]
+  proboutorhit[7,"out"] <- lineup$playername7["out",]
+  proboutorhit[7,"hit"] <- lineup$playername7["hit",]
+  proboutorhit[8,"out"] <- lineup$playername8["out",]
+  proboutorhit[8,"hit"] <- lineup$playername8["hit",]
+  proboutorhit[9,"out"] <- lineup$playername9["out",]
+  proboutorhit[9,"hit"] <- lineup$playername9["hit",]
+  
+  
+  prob <- matrix(0, 9, 6)
+  dimnames(prob)[[1]] <- c(1,2,3,4,5,6,7,8,9)
+  dimnames(prob)[[2]] <- c("BB", "1B", "ROE","2B", "3B", "HR")
+  prob[1,"BB"] <- lineup$playername1["BB",]
+  prob[1,"ROE"] <- lineup$playername1["ROE",]
+  prob[1,"1B"] <- lineup$playername1["1B",]
+  prob[1,"2B"] <- lineup$playername1["2B",]
+  prob[1,"3B"] <- lineup$playername1["3B",]
+  prob[1,"HR"] <- lineup$playername1["HR",]
+  prob[2,"BB"] <- lineup$playername2["BB",]
+  prob[2,"ROE"] <- lineup$playername2["ROE",]
+  prob[2,"1B"] <- lineup$playername2["1B",]
+  prob[2,"2B"] <- lineup$playername2["2B",]
+  prob[2,"3B"] <- lineup$playername2["3B",]
+  prob[2,"HR"] <- lineup$playername2["HR",]
+  prob[3,"BB"] <- lineup$playername3["BB",]
+  prob[3,"ROE"] <- lineup$playername3["ROE",]
+  prob[3,"1B"] <- lineup$playername3["1B",]
+  prob[3,"2B"] <- lineup$playername3["2B",]
+  prob[3,"3B"] <- lineup$playername3["3B",]
+  prob[3,"HR"] <- lineup$playername3["HR",]
+  prob[4,"BB"] <- lineup$playername4["BB",]
+  prob[4,"ROE"] <- lineup$playername4["ROE",]
+  prob[4,"1B"] <- lineup$playername4["1B",]
+  prob[4,"2B"] <- lineup$playername4["2B",]
+  prob[4,"3B"] <- lineup$playername4["3B",]
+  prob[4,"HR"] <- lineup$playername4["HR",]
+  prob[5,"BB"] <- lineup$playername5["BB",]
+  prob[5,"ROE"] <- lineup$playername5["ROE",]
+  prob[5,"1B"] <- lineup$playername5["1B",]
+  prob[5,"2B"] <- lineup$playername5["2B",]
+  prob[5,"3B"] <- lineup$playername5["3B",]
+  prob[5,"HR"] <- lineup$playername5["HR",]
+  prob[6,"BB"] <- lineup$playername6["BB",]
+  prob[6,"ROE"] <- lineup$playername6["ROE",]
+  prob[6,"1B"] <- lineup$playername6["1B",]
+  prob[6,"2B"] <- lineup$playername6["2B",]
+  prob[6,"3B"] <- lineup$playername6["3B",]
+  prob[6,"HR"] <- lineup$playername6["HR",]
+  prob[7,"BB"] <- lineup$playername7["BB",]
+  prob[7,"ROE"] <- lineup$playername7["ROE",]
+  prob[7,"1B"] <- lineup$playername7["1B",]
+  prob[7,"2B"] <- lineup$playername7["2B",]
+  prob[7,"3B"] <- lineup$playername7["3B",]
+  prob[7,"HR"] <- lineup$playername7["HR",]
+  prob[8,"BB"] <- lineup$playername8["BB",]
+  prob[8,"ROE"] <- lineup$playername8["ROE",]
+  prob[8,"1B"] <- lineup$playername8["1B",]
+  prob[8,"2B"] <- lineup$playername8["2B",]
+  prob[8,"3B"] <- lineup$playername8["3B",]
+  prob[8,"HR"] <- lineup$playername8["HR",]
+  prob[9,"BB"] <- lineup$playername9["BB",]
+  prob[9,"ROE"] <- lineup$playername9["ROE",]
+  prob[9,"1B"] <- lineup$playername9["1B",]
+  prob[9,"2B"] <- lineup$playername9["2B",]
+  prob[9,"3B"] <- lineup$playername9["3B",]
+  prob[9,"HR"] <- lineup$playername9["HR",]
+  
+  list(Prob_SB=Prob_SB, Prob_Single=Prob_Single, Prob_Double=Prob_Double, 
+       Prob_Walk = Prob_Walk, prob=prob, probsb = probsb, Prob_SB_OUT = Prob_SB_OUT, probwppb = probwppb, probK = probK, probout = probout, proboutorhit=proboutorhit, Prob_SF_SH=Prob_SF_SH,Prob_ROE=Prob_ROE,Prob_GIDP=Prob_GIDP,Prob_WP_PB=Prob_WP_PB)
+}
+
+```
+
+
+
+
+#Game-Simulator
+```{r}
+
+simulate_half_inning <- function(setup){
+  runs.transition <- function(s1, s2){
+    before <- sum(as.numeric(unlist(strsplit(s1, split=""))))
+    after <- sum(as.numeric(unlist(strsplit(s2, split=""))))
+    before - after + 1
+  }
+  
+  outs <- 0
+  bases <- "000"
+  runs <- 0
+  batter <- 1
+  all_bases <- c("000", "100", "010", "001",
+               "110", "101", "011", "111")
+  all_events <- c("BB", "1B", "ROE","2B", "3B", "HR")
+  sb_or_no <- c("SB", "No SB", "OUT")
+  k_contact <-  c("K", "contact")
+  WP_PB <- c("WP", "PB", "pitch")
+  eventouthow <- c("GIDP","SF/SH","out/hit")
+  innings <- 0
+  runner = 10
+  outorhit <- c("out","hit")
+  
+  while(innings < 10){
+    if ((bases == "100")|(bases =="010")|(bases =="101")) {
+      event1 <- sample(sb_or_no, size=1, prob=setup$probsb[runner, ])
+   if (event1=="SB") sb_bases <- sample(all_bases, 1, 
+                              prob=setup$Prob_SB[bases, ])
+   if (event1=="OUT") sb_bases <- sample(all_bases, 1, 
+                              prob=setup$Prob_SB_OUT[bases, ])
+   if (event1=="No SB") sb_bases <- bases
+    bases <- sb_bases
+    outs <- outs + (event1 == "OUT")
+   if (outs == 3) innings <- innings + 1
+   if (outs == 3) bases <- "000"
+   if (outs == 3) outs <- 0
+    }
+   
+   if ((bases == "100")|(bases =="010")|(bases =="001")|(bases =="110")|(bases =="011")|(bases =="101")|(bases =="111")){
+     event2 <- sample(WP_PB, size = 1, prob = setup$probwppb)
+     if (event2 == "WP") WPPB_bases <- sample(all_bases, 1, prob = setup$Prob_WP_PB[bases, ])
+     if (event2 == "PB") WPPB_bases <- sample(all_bases, 1, prob = setup$Prob_WP_PB[bases, ])
+     if (event2 == "pitch") WPPB_bases <- bases
+     bases <- WPPB_bases
+     runs <- runs - (event2 == "pitch") + 
+           runs.transition(bases, WPPB_bases)
+   }
+   
+    
+    eventK_or_no <- sample(k_contact, size=1, prob=setup$probK[batter, ])
+    if (eventK_or_no == "K") new_bases <- bases
+        event <- "OUT"
+        eventout <- "OUT"
+        eventoutorhit <- "OUT"
+    if (eventK_or_no == "contact") eventout <- sample(eventouthow, size=1, prob=setup$probout[batter, ]) 
+      if (outs == 2&&eventK_or_no == "contact") eventout <- "out/hit"
+      if (eventout == "GIDP") new_bases <- sample(all_bases, 1, prob=setup$Prob_GIDP[bases, ])
+        event <- "OUT"
+        eventoutorhit <- "OUT"
+      if (eventout == "SF/SH") new_bases <- sample(all_bases, 1, prob=setup$Prob_SF_SH[bases, ])
+        event <- "OUT"
+        eventoutorhit <- "OUT"
+      if (eventout == "out/hit") eventoutorhit <- sample(outorhit, size=1, prob=setup$proboutorhit[batter, ])
+          if (eventoutorhit == "out") new_bases <- bases
+              event <- "OUT"
+          if (eventoutorhit == "hit") event <- sample(all_events, size=1, prob=setup$prob[batter, ])
+                if (event=="1B") new_bases <- sample(all_bases, 1, 
+                              prob=setup$Prob_Single[bases, ])
+                if (event=="2B") new_bases <- sample(all_bases, 1, 
+                              prob=setup$Prob_Double[bases, ])
+                if (event=="BB") new_bases <- sample(all_bases, 1, 
+                              prob=setup$Prob_Walk[bases, ])
+                if (event=="3B") new_bases <- "001"
+                if (event=="HR") new_bases <- "000"
+                if (event=="ROE") new_bases <- sample(all_bases, 1, 
+                              prob=setup$Prob_ROE[bases, ])
+
+if (event == "OUT"|event == "HR"){
+  runner <- runner
+}else{
+  runner <- batter
+  }
+ifelse(batter == 9, 
+batter <- 1,
+batter <- batter + 1)
+outs <- outs + (event == "OUT") + (eventout == "GIDP")
+
+if (eventout == "GIDP"){
+  runs <- runs - (event == "OUT") - (eventout == "GIDP") + (1+runs.transition(bases, new_bases))
+}else{
+  runs <- runs - (event == "OUT") + runs.transition(bases, new_bases)
+}
+bases <- new_bases
+if (outs == 3) innings <- innings + 1
+if (outs == 3) bases <- "000"
+if (outs == 3) outs <- 0
+if (outs == 3) runner <- 10
+ }
+  runs
+}
+
+```
+
+#The Lines
+```{r}
+thelines <- function(){
+url <- "https://www.actionnetwork.com/mlb/public-betting"
+webpage <- read_html(url)
+teamsplaying <- webpage %>% html_nodes(xpath='//a[@class="game-matchup-link"]//span[@class="font-weight-semibold"]') %>% html_text()
+thelines_away <- webpage %>% html_nodes(xpath='//td[@class="text-right"]//span[@class="d-block "]') %>% html_text()
+thelines_home <- webpage %>% html_nodes(xpath='//td[@class="text-right"]//span[@class="d-block mt-1 "]') %>% html_text()
+teamsplaying_away <- teamsplaying[c(TRUE, FALSE)]
+teamsplaying_home <- teamsplaying[c(FALSE, TRUE)]
+lines_teams_home <- data.frame(teamsplaying_home,thelines_home)
+lines_teams_away <- data.frame(teamsplaying_away,thelines_away)
+lines_teams <- data.frame(lines_teams_home,lines_teams_away)
+lines_teams
+}
+
+
+```
+
+
+#The God Function
+```{r}
+
+matchup <- function(team1q, team2q){
+team1lineup <- Starters(team1q)
+team2lineup <- Starters(team2q)
+team1catcher <- Catcherfx(team1lineup)
+team2catcher <- Catcherfx(team2lineup)
+team1starter <- SPfx(team1lineup)
+team2starter <- SPfx(team2lineup)
+team1order <- BOfx(team1lineup)
+team2order <- BOfx(team2lineup)
+team1bullpen <- Bullpenfx(team1q)
+team2bullpen <- Bullpenfx(team2q)
+
+team1 <- LineupMKR(team1order, team2starter, team2bullpen, team2catcher)
+team2 <- LineupMKR(team2order, team1starter, team1bullpen, team1catcher)
+
+team1 <- runs_setup(team1)
+team2 <- runs_setup(team2)
+
+R1 <- replicate(10000, simulate_half_inning(team1))
+team1score <- mean(R1)
+
+R2 <- replicate(10000, simulate_half_inning(team2))
+team2score <- mean(R2)
+
+team1lineup$V1.1 <- as.character(team1lineup$V1.1)
+team1lineup$V2.1 <- as.character(team1lineup$V2.1)
+team1lineup$V3.1 <- as.character(team1lineup$V3.1)
+team1lineup$V4.1 <- as.character(team1lineup$V4.1)
+team1lineup$V5.1 <- as.character(team1lineup$V5.1)
+team1lineup$V6.1 <- as.character(team1lineup$V6.1)
+team1lineup$V7.1 <- as.character(team1lineup$V7.1)
+team1lineup$V8.1 <- as.character(team1lineup$V8.1)
+team1lineup$V9.1 <- as.character(team1lineup$V9.1)
+team2lineup$V1.1 <- as.character(team2lineup$V1.1)
+team2lineup$V2.1 <- as.character(team2lineup$V2.1)
+team2lineup$V3.1 <- as.character(team2lineup$V3.1)
+team2lineup$V4.1 <- as.character(team2lineup$V4.1)
+team2lineup$V5.1 <- as.character(team2lineup$V5.1)
+team2lineup$V6.1 <- as.character(team2lineup$V6.1)
+team2lineup$V7.1 <- as.character(team2lineup$V7.1)
+team2lineup$V8.1 <- as.character(team2lineup$V8.1)
+team2lineup$V9.1 <- as.character(team2lineup$V9.1)
+
+Lineup1 <- matrix(0, 10, 2)
+  dimnames(Lineup1)[[1]] <- c(1,2,3,4,5,6,7,8,9,10)
+  dimnames(Lineup1)[[2]] <- c("Name","Pos")
+  Lineup1[1,"Name"] <- team1lineup$V1
+  Lineup1[2,"Name"] <- team1lineup$V2
+  Lineup1[3,"Name"] <- team1lineup$V3
+  Lineup1[4,"Name"] <- team1lineup$V4
+  Lineup1[5,"Name"] <- team1lineup$V5
+  Lineup1[6,"Name"] <- team1lineup$V6
+  Lineup1[7,"Name"] <- team1lineup$V7
+  Lineup1[8,"Name"] <- team1lineup$V8
+  Lineup1[9,"Name"] <- team1lineup$V9
+  Lineup1[10,"Name"] <- team1lineup$startingpitchers
+  Lineup1[1,"Pos"] <- team1lineup$V1.1
+  Lineup1[2,"Pos"] <- team1lineup$V2.1
+  Lineup1[3,"Pos"] <- team1lineup$V3.1
+  Lineup1[4,"Pos"] <- team1lineup$V4.1
+  Lineup1[5,"Pos"] <- team1lineup$V5.1
+  Lineup1[6,"Pos"] <- team1lineup$V6.1
+  Lineup1[7,"Pos"] <- team1lineup$V7.1
+  Lineup1[8,"Pos"] <- team1lineup$V8.1
+  Lineup1[9,"Pos"] <- team1lineup$V9.1
+  Lineup1[10,"Pos"] <- "SP"
+  
+  
+Lineup2 <- matrix(0, 10, 2)
+  dimnames(Lineup2)[[1]] <- c(1,2,3,4,5,6,7,8,9,10)
+  dimnames(Lineup2)[[2]] <- c("Name","Pos")
+  Lineup2[1,"Name"] <- team2lineup$V1
+  Lineup2[2,"Name"] <- team2lineup$V2
+  Lineup2[3,"Name"] <- team2lineup$V3
+  Lineup2[4,"Name"] <- team2lineup$V4
+  Lineup2[5,"Name"] <- team2lineup$V5
+  Lineup2[6,"Name"] <- team2lineup$V6
+  Lineup2[7,"Name"] <- team2lineup$V7
+  Lineup2[8,"Name"] <- team2lineup$V8
+  Lineup2[9,"Name"] <- team2lineup$V9
+  Lineup2[10,"Name"] <- team2lineup$startingpitchers
+  Lineup2[1,"Pos"] <- team2lineup$V1.1
+  Lineup2[2,"Pos"] <- team2lineup$V2.1
+  Lineup2[3,"Pos"] <- team2lineup$V3.1
+  Lineup2[4,"Pos"] <- team2lineup$V4.1
+  Lineup2[5,"Pos"] <- team2lineup$V5.1
+  Lineup2[6,"Pos"] <- team2lineup$V6.1
+  Lineup2[7,"Pos"] <- team2lineup$V7.1
+  Lineup2[8,"Pos"] <- team2lineup$V8.1
+  Lineup2[9,"Pos"] <- team2lineup$V9.1
+  Lineup2[10,"Pos"] <- "SP"
+  
+  date <- as.character(Sys.Date())
+  time <- as.character(Sys.time())
+list(date=date,time=time,away_teamabbrev=team1lineup$ROTOWIRETEAM,home_teamabbrev=team2lineup$ROTOWIRETEAM,away_team_score=team1score,home_team_score=team2score,away_lineup=Lineup1,home_lineup=Lineup2)
+}
+```
+
+
+#Titans > Gods
+```{r}
+Titanic <- function(){
+  DO_doubleG <- function(){
+todayslines <- thelines()
+MLBTeamKey <- read.csv("MLBteamKey.csv", colClasses = "character")
+l_not_s<-length(todayslines$teamsplaying_away)
+for (i in 1:l_not_s){
+  todayslines$teamname_away[i] <- MLBTeamKey$FANGRAPHSTEAM[MLBTeamKey$ACTIONTEAM==todayslines$teamsplaying_away[i]]
+  todayslines$teamname_home[i] <- MLBTeamKey$FANGRAPHSTEAM[MLBTeamKey$ACTIONTEAM==todayslines$teamsplaying_home[i]]
+  todayslines$teamsplaying_away.x[i] <- MLBTeamKey$ROTOWIRETEAM[MLBTeamKey$ACTIONTEAM==todayslines$teamsplaying_away[i]]
+  todayslines$teamsplaying_home.y[i] <- MLBTeamKey$ROTOWIRETEAM[MLBTeamKey$ACTIONTEAM==todayslines$teamsplaying_home[i]]
+}
+todayslines
+}
+todayslines <- DO_doubleG()
+l_not_s<-length(todayslines$teamsplaying_away)
+
+
+if(l_not_s==15){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  game9 <- c(NA, NA)
+  game9 <- c(todayslines$teamname_away[9],todayslines$teamname_home[9])
+  game10 <- c(NA, NA)
+  game10 <- c(todayslines$teamname_away[10],todayslines$teamname_home[10])
+  game11 <- c(NA, NA)
+  game11 <- c(todayslines$teamname_away[11],todayslines$teamname_home[11])
+  game12 <- c(NA, NA)
+  game12 <- c(todayslines$teamname_away[12],todayslines$teamname_home[12])
+  game13 <- c(NA, NA)
+  game13 <- c(todayslines$teamname_away[13],todayslines$teamname_home[13])
+  game14 <- c(NA, NA)
+  game14 <- c(todayslines$teamname_away[14],todayslines$teamname_home[14])
+  game15 <- c(NA, NA)
+  game15 <- c(todayslines$teamname_away[15],todayslines$teamname_home[15])
+  
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8,game9,game10,game11,game12,game13,game14,game15)  
+
+  
+}
+if(l_not_s==14){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  game9 <- c(NA, NA)
+  game9 <- c(todayslines$teamname_away[9],todayslines$teamname_home[9])
+  game10 <- c(NA, NA)
+  game10 <- c(todayslines$teamname_away[10],todayslines$teamname_home[10])
+  game11 <- c(NA, NA)
+  game11 <- c(todayslines$teamname_away[11],todayslines$teamname_home[11])
+  game12 <- c(NA, NA)
+  game12 <- c(todayslines$teamname_away[12],todayslines$teamname_home[12])
+  game13 <- c(NA, NA)
+  game13 <- c(todayslines$teamname_away[13],todayslines$teamname_home[13])
+  game14 <- c(NA, NA)
+  game14 <- c(todayslines$teamname_away[14],todayslines$teamname_home[14])
+
+  
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8,game9,game10,game11,game12,game13,game14) 
+
+  
+}
+if(l_not_s==13){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  game9 <- c(NA, NA)
+  game9 <- c(todayslines$teamname_away[9],todayslines$teamname_home[9])
+  game10 <- c(NA, NA)
+  game10 <- c(todayslines$teamname_away[10],todayslines$teamname_home[10])
+  game11 <- c(NA, NA)
+  game11 <- c(todayslines$teamname_away[11],todayslines$teamname_home[11])
+  game12 <- c(NA, NA)
+  game12 <- c(todayslines$teamname_away[12],todayslines$teamname_home[12])
+  game13 <- c(NA, NA)
+  game13 <- c(todayslines$teamname_away[13],todayslines$teamname_home[13])
+  
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8,game9,game10,game11,game12,game13)  
+  
+}
+
+if(l_not_s==12){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  game9 <- c(NA, NA)
+  game9 <- c(todayslines$teamname_away[9],todayslines$teamname_home[9])
+  game10 <- c(NA, NA)
+  game10 <- c(todayslines$teamname_away[10],todayslines$teamname_home[10])
+  game11 <- c(NA, NA)
+  game11 <- c(todayslines$teamname_away[11],todayslines$teamname_home[11])
+  game12 <- c(NA, NA)
+  game12 <- c(todayslines$teamname_away[12],todayslines$teamname_home[12])
+  
+  
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8,game9,game10,game11,game12) 
+  
+
+}
+
+if(l_not_s==11){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  game9 <- c(NA, NA)
+  game9 <- c(todayslines$teamname_away[9],todayslines$teamname_home[9])
+  game10 <- c(NA, NA)
+  game10 <- c(todayslines$teamname_away[10],todayslines$teamname_home[10])
+  game11 <- c(NA, NA)
+  game11 <- c(todayslines$teamname_away[11],todayslines$teamname_home[11])
+  
+
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8,game9,game10,game11) 
+
+}
+
+if(l_not_s==10){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  game9 <- c(NA, NA)
+  game9 <- c(todayslines$teamname_away[9],todayslines$teamname_home[9])
+  game10 <- c(NA, NA)
+  game10 <- c(todayslines$teamname_away[10],todayslines$teamname_home[10])
+  
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8,game9,game10)  
+  
+ 
+}
+
+
+
+if(l_not_s==9){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  game9 <- c(NA, NA)
+  game9 <- c(todayslines$teamname_away[9],todayslines$teamname_home[9])
+  
+ 
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8,game9)  
+ 
+}
+
+
+if(l_not_s==8){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  game8 <- c(NA, NA)
+  game8 <- c(todayslines$teamname_away[8],todayslines$teamname_home[8])
+  
+lister <- list(game1,game2,game3,game4,game5,game6,game7,game8) 
+  
+ 
+}
+
+if(l_not_s==7){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  game7 <- c(NA, NA)
+  game7 <- c(todayslines$teamname_away[7],todayslines$teamname_home[7])
+  
+  
+lister <- list(game1,game2,game3,game4,game5,game6,game7)  
+  
+
+
+}
+
+if(l_not_s==6){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  game6 <- c(NA, NA)
+  game6 <- c(todayslines$teamname_away[6],todayslines$teamname_home[6])
+  
+ 
+lister <- list(game1,game2,game3,game4,game5,game6)   
+ 
+
+}
+
+if(l_not_s==5){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+  game5 <- c(NA, NA)
+  game5 <- c(todayslines$teamname_away[5],todayslines$teamname_home[5])
+  
+   
+  
+lister <- list(game1,game2,game3,game4,game5) 
+
+}
+
+if(l_not_s==4){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  game4 <- c(NA, NA)
+  game4 <- c(todayslines$teamname_away[4],todayslines$teamname_home[4])
+
+lister <- list(game1,game2,game3,game4) 
+ 
+}
+
+if(l_not_s==3){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  game3 <- c(NA, NA)
+  game3 <- c(todayslines$teamname_away[3],todayslines$teamname_home[3])
+  
+  
+lister <- list(game1,game2,game3) 
+
+
+}
+
+if(l_not_s==2){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  game2 <- c(NA, NA)
+  game2 <- c(todayslines$teamname_away[2],todayslines$teamname_home[2])
+  
+lister <- list(game1,game2)
+  
+   
+}
+
+if(l_not_s==1){
+  game1 <- c(NA, NA)
+  game1 <- c(todayslines$teamname_away[1],todayslines$teamname_home[1])
+  
+lister <- list(game1)  
+  }
+lister
+}
+
+
+
+
+```
+
+
+#Matchups into the Sheet
+```{r}
+game1_matchup   <- matchup(gamestoday[[1]][1],gamestoday[[1]][2])
+game1_matchup$away_live_line <- as.character(todayslines$thelines_away[game1_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game1_matchup$home_live_line <- as.character(todayslines$thelines_home[game1_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game1_matchup$date,game1_matchup$time,game1_matchup$away_teamabbrev,game1_matchup$home_teamabbrev,game1_matchup$away_team_score,game1_matchup$home_team_score,game1_matchup$away_lineup[10],game1_matchup$away_lineup[1],game1_matchup$away_lineup[2],game1_matchup$away_lineup[3],game1_matchup$away_lineup[4],game1_matchup$away_lineup[5],game1_matchup$away_lineup[6],game1_matchup$away_lineup[7],game1_matchup$away_lineup[8],game1_matchup$away_lineup[9],game1_matchup$home_lineup[10],game1_matchup$home_lineup[1],game1_matchup$home_lineup[2],game1_matchup$home_lineup[3],game1_matchup$home_lineup[4],game1_matchup$home_lineup[5],game1_matchup$home_lineup[6],game1_matchup$home_lineup[7],game1_matchup$home_lineup[8],game1_matchup$home_lineup[9],game1_matchup$away_live_line,game1_matchup$home_live_line))
+
+game2_matchup   <- matchup(gamestoday[[2]][1],gamestoday[[2]][2])
+game2_matchup$away_live_line <- as.character(todayslines$thelines_away[game2_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game2_matchup$home_live_line <- as.character(todayslines$thelines_home[game2_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game2_matchup$date,game2_matchup$time,game2_matchup$away_teamabbrev,game2_matchup$home_teamabbrev,game2_matchup$away_team_score,game2_matchup$home_team_score,game2_matchup$away_lineup[10],game2_matchup$away_lineup[1],game2_matchup$away_lineup[2],game2_matchup$away_lineup[3],game2_matchup$away_lineup[4],game2_matchup$away_lineup[5],game2_matchup$away_lineup[6],game2_matchup$away_lineup[7],game2_matchup$away_lineup[8],game2_matchup$away_lineup[9],game2_matchup$home_lineup[10],game2_matchup$home_lineup[1],game2_matchup$home_lineup[2],game2_matchup$home_lineup[3],game2_matchup$home_lineup[4],game2_matchup$home_lineup[5],game2_matchup$home_lineup[6],game2_matchup$home_lineup[7],game2_matchup$home_lineup[8],game2_matchup$home_lineup[9],game2_matchup$away_live_line,game2_matchup$home_live_line))
+
+game3_matchup   <- matchup(gamestoday[[3]][1],gamestoday[[3]][2])
+game3_matchup$away_live_line <- as.character(todayslines$thelines_away[game3_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game3_matchup$home_live_line <- as.character(todayslines$thelines_home[game3_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game3_matchup$date,game3_matchup$time,game3_matchup$away_teamabbrev,game3_matchup$home_teamabbrev,game3_matchup$away_team_score,game3_matchup$home_team_score,game3_matchup$away_lineup[10],game3_matchup$away_lineup[1],game3_matchup$away_lineup[2],game3_matchup$away_lineup[3],game3_matchup$away_lineup[4],game3_matchup$away_lineup[5],game3_matchup$away_lineup[6],game3_matchup$away_lineup[7],game3_matchup$away_lineup[8],game3_matchup$away_lineup[9],game3_matchup$home_lineup[10],game3_matchup$home_lineup[1],game3_matchup$home_lineup[2],game3_matchup$home_lineup[3],game3_matchup$home_lineup[4],game3_matchup$home_lineup[5],game3_matchup$home_lineup[6],game3_matchup$home_lineup[7],game3_matchup$home_lineup[8],game3_matchup$home_lineup[9],game3_matchup$away_live_line,game3_matchup$home_live_line))
+
+game4_matchup   <- matchup(gamestoday[[4]][1],gamestoday[[4]][2])
+game4_matchup$away_live_line <- as.character(todayslines$thelines_away[game4_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game4_matchup$home_live_line <- as.character(todayslines$thelines_home[game4_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game4_matchup$date,game4_matchup$time,game4_matchup$away_teamabbrev,game4_matchup$home_teamabbrev,game4_matchup$away_team_score,game4_matchup$home_team_score,game4_matchup$away_lineup[10],game4_matchup$away_lineup[1],game4_matchup$away_lineup[2],game4_matchup$away_lineup[3],game4_matchup$away_lineup[4],game4_matchup$away_lineup[5],game4_matchup$away_lineup[6],game4_matchup$away_lineup[7],game4_matchup$away_lineup[8],game4_matchup$away_lineup[9],game4_matchup$home_lineup[10],game4_matchup$home_lineup[1],game4_matchup$home_lineup[2],game4_matchup$home_lineup[3],game4_matchup$home_lineup[4],game4_matchup$home_lineup[5],game4_matchup$home_lineup[6],game4_matchup$home_lineup[7],game4_matchup$home_lineup[8],game4_matchup$home_lineup[9],game4_matchup$away_live_line,game4_matchup$home_live_line))
+
+game5_matchup   <- matchup(gamestoday[[5]][1],gamestoday[[5]][2])
+game5_matchup$away_live_line <- as.character(todayslines$thelines_away[game5_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game5_matchup$home_live_line <- as.character(todayslines$thelines_home[game5_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game5_matchup$date,game5_matchup$time,game5_matchup$away_teamabbrev,game5_matchup$home_teamabbrev,game5_matchup$away_team_score,game5_matchup$home_team_score,game5_matchup$away_lineup[10],game5_matchup$away_lineup[1],game5_matchup$away_lineup[2],game5_matchup$away_lineup[3],game5_matchup$away_lineup[4],game5_matchup$away_lineup[5],game5_matchup$away_lineup[6],game5_matchup$away_lineup[7],game5_matchup$away_lineup[8],game5_matchup$away_lineup[9],game5_matchup$home_lineup[10],game5_matchup$home_lineup[1],game5_matchup$home_lineup[2],game5_matchup$home_lineup[3],game5_matchup$home_lineup[4],game5_matchup$home_lineup[5],game5_matchup$home_lineup[6],game5_matchup$home_lineup[7],game5_matchup$home_lineup[8],game5_matchup$home_lineup[9],game5_matchup$away_live_line,game5_matchup$home_live_line))
+
+game6_matchup   <- matchup(gamestoday[[6]][1],gamestoday[[6]][2])
+game6_matchup$away_live_line <- as.character(todayslines$thelines_away[game6_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game6_matchup$home_live_line <- as.character(todayslines$thelines_home[game6_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game6_matchup$date,game6_matchup$time,game6_matchup$away_teamabbrev,game6_matchup$home_teamabbrev,game6_matchup$away_team_score,game6_matchup$home_team_score,game6_matchup$away_lineup[10],game6_matchup$away_lineup[1],game6_matchup$away_lineup[2],game6_matchup$away_lineup[3],game6_matchup$away_lineup[4],game6_matchup$away_lineup[5],game6_matchup$away_lineup[6],game6_matchup$away_lineup[7],game6_matchup$away_lineup[8],game6_matchup$away_lineup[9],game6_matchup$home_lineup[10],game6_matchup$home_lineup[1],game6_matchup$home_lineup[2],game6_matchup$home_lineup[3],game6_matchup$home_lineup[4],game6_matchup$home_lineup[5],game6_matchup$home_lineup[6],game6_matchup$home_lineup[7],game6_matchup$home_lineup[8],game6_matchup$home_lineup[9],game6_matchup$away_live_line,game6_matchup$home_live_line))
+
+game7_matchup   <- matchup(gamestoday[[7]][1],gamestoday[[7]][2])
+game7_matchup$away_live_line <- as.character(todayslines$thelines_away[game7_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game7_matchup$home_live_line <- as.character(todayslines$thelines_home[game7_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game7_matchup$date,game7_matchup$time,game7_matchup$away_teamabbrev,game7_matchup$home_teamabbrev,game7_matchup$away_team_score,game7_matchup$home_team_score,game7_matchup$away_lineup[10],game7_matchup$away_lineup[1],game7_matchup$away_lineup[2],game7_matchup$away_lineup[3],game7_matchup$away_lineup[4],game7_matchup$away_lineup[5],game7_matchup$away_lineup[6],game7_matchup$away_lineup[7],game7_matchup$away_lineup[8],game7_matchup$away_lineup[9],game7_matchup$home_lineup[10],game7_matchup$home_lineup[1],game7_matchup$home_lineup[2],game7_matchup$home_lineup[3],game7_matchup$home_lineup[4],game7_matchup$home_lineup[5],game7_matchup$home_lineup[6],game7_matchup$home_lineup[7],game7_matchup$home_lineup[8],game7_matchup$home_lineup[9],game7_matchup$away_live_line,game7_matchup$home_live_line))
+
+game8_matchup   <- matchup(gamestoday[[8]][1],gamestoday[[8]][2])
+game8_matchup$away_live_line <- as.character(todayslines$thelines_away[game8_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game8_matchup$home_live_line <- as.character(todayslines$thelines_home[game8_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game8_matchup$date,game8_matchup$time,game8_matchup$away_teamabbrev,game8_matchup$home_teamabbrev,game8_matchup$away_team_score,game8_matchup$home_team_score,game8_matchup$away_lineup[10],game8_matchup$away_lineup[1],game8_matchup$away_lineup[2],game8_matchup$away_lineup[3],game8_matchup$away_lineup[4],game8_matchup$away_lineup[5],game8_matchup$away_lineup[6],game8_matchup$away_lineup[7],game8_matchup$away_lineup[8],game8_matchup$away_lineup[9],game8_matchup$home_lineup[10],game8_matchup$home_lineup[1],game8_matchup$home_lineup[2],game8_matchup$home_lineup[3],game8_matchup$home_lineup[4],game8_matchup$home_lineup[5],game8_matchup$home_lineup[6],game8_matchup$home_lineup[7],game8_matchup$home_lineup[8],game8_matchup$home_lineup[9],game8_matchup$away_live_line,game8_matchup$home_live_line))
+
+game9_matchup   <- matchup(gamestoday[[9]][1],gamestoday[[9]][2])
+game9_matchup$away_live_line <- as.character(todayslines$thelines_away[game9_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game9_matchup$home_live_line <- as.character(todayslines$thelines_home[game9_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game9_matchup$date,game9_matchup$time,game9_matchup$away_teamabbrev,game9_matchup$home_teamabbrev,game9_matchup$away_team_score,game9_matchup$home_team_score,game9_matchup$away_lineup[10],game9_matchup$away_lineup[1],game9_matchup$away_lineup[2],game9_matchup$away_lineup[3],game9_matchup$away_lineup[4],game9_matchup$away_lineup[5],game9_matchup$away_lineup[6],game9_matchup$away_lineup[7],game9_matchup$away_lineup[8],game9_matchup$away_lineup[9],game9_matchup$home_lineup[10],game9_matchup$home_lineup[1],game9_matchup$home_lineup[2],game9_matchup$home_lineup[3],game9_matchup$home_lineup[4],game9_matchup$home_lineup[5],game9_matchup$home_lineup[6],game9_matchup$home_lineup[7],game9_matchup$home_lineup[8],game9_matchup$home_lineup[9],game9_matchup$away_live_line,game9_matchup$home_live_line))
+
+game10_matchup   <- matchup(gamestoday[[10]][1],gamestoday[[10]][2])
+game10_matchup$away_live_line <- as.character(todayslines$thelines_away[game10_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game10_matchup$home_live_line <- as.character(todayslines$thelines_home[game10_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game10_matchup$date,game10_matchup$time,game10_matchup$away_teamabbrev,game10_matchup$home_teamabbrev,game10_matchup$away_team_score,game10_matchup$home_team_score,game10_matchup$away_lineup[10],game10_matchup$away_lineup[1],game10_matchup$away_lineup[2],game10_matchup$away_lineup[3],game10_matchup$away_lineup[4],game10_matchup$away_lineup[5],game10_matchup$away_lineup[6],game10_matchup$away_lineup[7],game10_matchup$away_lineup[8],game10_matchup$away_lineup[9],game10_matchup$home_lineup[10],game10_matchup$home_lineup[1],game10_matchup$home_lineup[2],game10_matchup$home_lineup[3],game10_matchup$home_lineup[4],game10_matchup$home_lineup[5],game10_matchup$home_lineup[6],game10_matchup$home_lineup[7],game10_matchup$home_lineup[8],game10_matchup$home_lineup[9],game10_matchup$away_live_line,game10_matchup$home_live_line))
+
+game11_matchup   <- matchup(gamestoday[[11]][1],gamestoday[[11]][2])
+game11_matchup$away_live_line <- as.character(todayslines$thelines_away[game11_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game11_matchup$home_live_line <- as.character(todayslines$thelines_home[game11_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game11_matchup$date,game11_matchup$time,game11_matchup$away_teamabbrev,game11_matchup$home_teamabbrev,game11_matchup$away_team_score,game11_matchup$home_team_score,game11_matchup$away_lineup[10],game11_matchup$away_lineup[1],game11_matchup$away_lineup[2],game11_matchup$away_lineup[3],game11_matchup$away_lineup[4],game11_matchup$away_lineup[5],game11_matchup$away_lineup[6],game11_matchup$away_lineup[7],game11_matchup$away_lineup[8],game11_matchup$away_lineup[9],game11_matchup$home_lineup[10],game11_matchup$home_lineup[1],game11_matchup$home_lineup[2],game11_matchup$home_lineup[3],game11_matchup$home_lineup[4],game11_matchup$home_lineup[5],game11_matchup$home_lineup[6],game11_matchup$home_lineup[7],game11_matchup$home_lineup[8],game11_matchup$home_lineup[9],game11_matchup$away_live_line,game11_matchup$home_live_line))
+
+game12_matchup   <- matchup(gamestoday[[12]][1],gamestoday[[12]][2])
+game12_matchup$away_live_line <- as.character(todayslines$thelines_away[game12_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game12_matchup$home_live_line <- as.character(todayslines$thelines_home[game12_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game12_matchup$date,game12_matchup$time,game12_matchup$away_teamabbrev,game12_matchup$home_teamabbrev,game12_matchup$away_team_score,game12_matchup$home_team_score,game12_matchup$away_lineup[10],game12_matchup$away_lineup[1],game12_matchup$away_lineup[2],game12_matchup$away_lineup[3],game12_matchup$away_lineup[4],game12_matchup$away_lineup[5],game12_matchup$away_lineup[6],game12_matchup$away_lineup[7],game12_matchup$away_lineup[8],game12_matchup$away_lineup[9],game12_matchup$home_lineup[10],game12_matchup$home_lineup[1],game12_matchup$home_lineup[2],game12_matchup$home_lineup[3],game12_matchup$home_lineup[4],game12_matchup$home_lineup[5],game12_matchup$home_lineup[6],game12_matchup$home_lineup[7],game12_matchup$home_lineup[8],game12_matchup$home_lineup[9],game12_matchup$away_live_line,game12_matchup$home_live_line))
+
+game13_matchup   <- matchup(gamestoday[[13]][1],gamestoday[[13]][2])
+game13_matchup$away_live_line <- as.character(todayslines$thelines_away[game13_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game13_matchup$home_live_line <- as.character(todayslines$thelines_home[game13_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game13_matchup$date,game13_matchup$time,game13_matchup$away_teamabbrev,game13_matchup$home_teamabbrev,game13_matchup$away_team_score,game13_matchup$home_team_score,game13_matchup$away_lineup[10],game13_matchup$away_lineup[1],game13_matchup$away_lineup[2],game13_matchup$away_lineup[3],game13_matchup$away_lineup[4],game13_matchup$away_lineup[5],game13_matchup$away_lineup[6],game13_matchup$away_lineup[7],game13_matchup$away_lineup[8],game13_matchup$away_lineup[9],game13_matchup$home_lineup[10],game13_matchup$home_lineup[1],game13_matchup$home_lineup[2],game13_matchup$home_lineup[3],game13_matchup$home_lineup[4],game13_matchup$home_lineup[5],game13_matchup$home_lineup[6],game13_matchup$home_lineup[7],game13_matchup$home_lineup[8],game13_matchup$home_lineup[9],game13_matchup$away_live_line,game13_matchup$home_live_line))
+
+game14_matchup   <- matchup(gamestoday[[14]][1],gamestoday[[14]][2])
+game14_matchup$away_live_line <- as.character(todayslines$thelines_away[game14_matchup$away_teamabbrev==todayslines$teamsplaying_away.x])
+game14_matchup$home_live_line <- as.character(todayslines$thelines_home[game14_matchup$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(game14_matchup$date,game14_matchup$time,game14_matchup$away_teamabbrev,game14_matchup$home_teamabbrev,game14_matchup$away_team_score,game14_matchup$home_team_score,game14_matchup$away_lineup[10],game14_matchup$away_lineup[1],game14_matchup$away_lineup[2],game14_matchup$away_lineup[3],game14_matchup$away_lineup[4],game14_matchup$away_lineup[5],game14_matchup$away_lineup[6],game14_matchup$away_lineup[7],game14_matchup$away_lineup[8],game14_matchup$away_lineup[9],game14_matchup$home_lineup[10],game14_matchup$home_lineup[1],game14_matchup$home_lineup[2],game14_matchup$home_lineup[3],game14_matchup$home_lineup[4],game14_matchup$home_lineup[5],game14_matchup$home_lineup[6],game14_matchup$home_lineup[7],game14_matchup$home_lineup[8],game14_matchup$home_lineup[9],game14_matchup$away_live_line,game14_matchup$home_live_line))
+
+
+```
+
+
+
+#Lines into the Sheet
+```{r}
+
+updatelines <- function(){
+  for (i in 1:l_not_s){
+  date <- as.character(Sys.Date())
+  time <- as.character(Sys.time())
+  todayslines <- thelines()
+  todayslines$teamsplaying_home <- as.character(todayslines$teamsplaying_home)
+  todayslines$teamsplaying_away <- as.character(todayslines$teamsplaying_away)
+  todayslines$thelines_home <- as.character(todayslines$thelines_home)
+  todayslines$thelines_away <- as.character(todayslines$thelines_away)
+  gs_add_row(MLB_model, ws = "the_lines", input = c(todayslines$teamsplaying_home[i],todayslines$thelines_home[i],todayslines$teamsplaying_away[i],todayslines$thelines_away[i],date,time,l_not_s))
+}
+}  
+
+
+
+```
+
+#Game-to-sheet function
+```{r}
+game_to_sheet <- function(gamenumber){
+givenmatch   <- matchup(gamestoday[[gamenumber]][1],gamestoday[[gamenumber]][2])
+givenmatch$away_live_line <- as.character(todayslines$thelines_away[givenmatch$away_teamabbrev==todayslines$teamsplaying_away.x])
+givenmatch$home_live_line <- as.character(todayslines$thelines_home[givenmatch$home_teamabbrev==todayslines$teamsplaying_home.y])
+  
+gs_add_row(MLB_model, ws = "edit_cells", input = c(givenmatch$date,givenmatch$time,givenmatch$away_teamabbrev,givenmatch$home_teamabbrev,givenmatch$away_team_score,givenmatch$home_team_score,givenmatch$away_lineup[10],givenmatch$away_lineup[1],givenmatch$away_lineup[2],givenmatch$away_lineup[3],givenmatch$away_lineup[4],givenmatch$away_lineup[5],givenmatch$away_lineup[6],givenmatch$away_lineup[7],givenmatch$away_lineup[8],givenmatch$away_lineup[9],givenmatch$home_lineup[10],givenmatch$home_lineup[1],givenmatch$home_lineup[2],givenmatch$home_lineup[3],givenmatch$home_lineup[4],givenmatch$home_lineup[5],givenmatch$home_lineup[6],givenmatch$home_lineup[7],givenmatch$home_lineup[8],givenmatch$home_lineup[9],givenmatch$away_live_line,givenmatch$home_live_line))
+}
+```
+
+
+
+
+###If I had a code to run...
+```{r}
+gamestoday <- Titanic()
+updatelines()
+game_to_sheet(1)
+```
+
+
+
+
+###Google Sheet set-up
+```{r}
+gs_auth(new_user = TRUE)
+MLB_model <- gs_title("MLB_model")
+```
+
+
+
+
+#Google Sheet pre-set-up
+```{r}
+date <- NA
+time<- NA
+away_team<- NA
+home_team<- NA
+away_team_score<- NA
+home_team_score<- NA
+away_starter<- NA
+away_1<- NA
+away_2<- NA
+away_3<- NA
+away_4<- NA
+away_5<- NA
+away_6<- NA
+away_7<- NA
+away_8<- NA
+away_9<- NA
+home_starter<- NA
+home_1<- NA
+home_2<- NA
+home_3<- NA
+home_4<- NA
+home_5<- NA
+home_6<- NA
+home_7<- NA
+home_8<- NA
+home_9<- NA
+away_line_line <- NA
+home_live_line <- NA
+game1matchup_df <- data.frame(date,time,away_team,home_team,away_team_score,home_team_score,away_starter,away_1,away_2,away_3,away_4,away_5,away_6,away_7,away_8,away_9,home_starter,home_1,home_2,home_3,home_4,home_5,home_6,home_7,home_8,home_9,away_line_line,home_live_line)
+
+
+
+MLB_model <- MLB_model %>%
+gs_ws_new(ws_title = "the_lines", input = head(todayslines,1),
+                    trim = TRUE, verbose = FALSE)
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

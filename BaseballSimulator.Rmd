@@ -22,7 +22,7 @@ library(data.table)
 library(tools)
 ```
 
-
+The Starters function takes the lineup information (teams, players, starting pitchers, positions and order in the lineup) from https://www.rotowire.com/baseball/daily-lineups.php. There is an indicator on the website that a lineup is confirmed and that is the key to take the data from there and organize it in a dataframe with the players' positions and names (and, very key, the order of the hitters). The code is basically drawn out to take all the data from the website to set up all the other functions. 
 
 #Lineup to IDs
 ```{r}
@@ -442,6 +442,10 @@ whatever <- TodaysLineups[TodaysLineups$teamsplaying.x==teamabbrev, ][1,]
 
 ```
 
+The catcher function is the simplest, finding the catcher from the lineup from the Starters fx, identifying relevant
+statistics taken from fangraphs.com and putting those stats into a list. For the catcher (unique to any other position player in the lineup), his defense impacts every individual at-bat because of his ability to get a runner out or give up a base. So, we find the table on fangraphs for the individual catcher (using the website's player id, linked to each player and repeatable in the link for player statistics e.g. Blake Swihart's ID is 13176 so the link to his stats is https://www.fangraphs.com/statss.aspx?playerid=13176&position=C) that has fielding stats and put a list together with 1. the likelihood of a stolen base on a given at-bat 2. the likelihood of runner caught stealing in a given at-bat 3. the likelihood of the runner staying put on a given at-bat 4. the likelihood of the at-bat having no passed ball 5. the likelihood of the catcher allowing a passed ball*
+
+*The relevance of these stats — and why they are all probabilities that revolve around the event of an at-bat — will be explained as this goes on. For now, just think of a game as two adjacent series of 27 outs (or 9 innings) that are made up of runners advancing and at-bats. At-bats being a pitcher's ability to beat a hitter and vice versa is easy enough to understand for any baseball fan I think; so think of runners advancing as a catcher and a pitcher against the runner and vice versa `before the ball is played`. 
 
 ###Catcher
 
@@ -492,11 +496,40 @@ Catcher <- list(one=one)
 
 ```
 
+Next is the starting pitcher — and since all these position-based functions follow the same pattern — I'll spare the extraneous details of how to arrive at the relevant statitistics and instead go further into what they are and why they are relevant. Here, the one change is that instead of the stats being derived from the players' career stats, they are the 2019 ZiPS season projections from Fangraphs. A lot of this is necessarily dependent on how ~correct~ those projections are when evaluating a player's season, but they are derived from complex formulas given all the statistics that the player has exhibited so far. 
+
+For the starting pitcher, the below are the relevant statistics and a short definition of the stat and its grouping.
+
+SB <- likelihood of a runner stealing on the starter
+CS <- likelihood of the runner getting caught stealing on the starter
+stay <- likelihood of the runner staying put
+
+WP <- likelihood of the starter throwing a wild pitch
+pitch < the likelihood of the at-bat not having a wild pitch
+
+K <- the likelihood of the starter striking out the batter *K rate*
+contact <- the lieklihood of the at-bat not ending in a strikeout
+
+hit <- the likelihood of the batter reaching base safely in the at-bat
+out <- the likelihood of the starter getting the batter out (but not striking him out!)
+
+*the reason the two groups above are separated is because a K is all but guaranteed to leave the bases where they are whereas an out may move a baserunner. 
+
+BB <- the likelihood of the batter reaching base via a non-hit
+1B <- the likelihood of the batter reaching base via a single
+2B <- the likelihood of the batter reaching base via a double
+3B <- the likelihood of the batter reaching base via a triple
+HR <- the likelihood of the batter reaching base via a home run
+
+Inn/G <- the starter's innings per game *not relevant right now*
+ 
+ 
+
+
 
 ###Starting Pitcher
 
 ```{r}
-yanks <- Starters("Yankees")
 SPfx <- function(teamlineups){
 player <- NA
 playerID <- NA
@@ -610,6 +643,30 @@ StartingPitcher <- list(one=one)
 
 ```
 
+For the Batting Order, the below are the relevant statistics and a short definition of the stat and its grouping. 
+
+SB <- likelihood of a hitter, when on base stealing on the pitcher
+CS <- likelihood of the hitter, when on base getting caught stealing on the pitcher
+stay <- likelihood of the hitter, when on base staying put
+
+K <- the likelihood of the starter striking out the batter *K rate*
+contact <- the lieklihood of the at-bat not ending in a strikeout
+
+GIDP <- likelihood of the batter hitting into a double play
+SF/SH <- the likelihood of the batter hitting a sacrifice fly or hit *that moves the runner or scores a run*
+outorhit <- the likelihood of an out that doesn't move the bases or a hit
+                      //I know this is slightly limited view of what an out and a sacrifice hit is. 
+
+hit <- the likelihood of the batter reaching base safely in the at-bat
+out <- the likelihood of the batter being out (but not striking him out!)
+
+BB <- the likelihood of the batter reaching base via a non-hit
+1B <- the likelihood of the batter reaching base via a single
+2B <- the likelihood of the batter reaching base via a double
+3B <- the likelihood of the batter reaching base via a triple
+HR <- the likelihood of the batter reaching base via a home run
+
+*The order of all of these groups and stats are important and something you will see repeated later.*
 
 ###Batting Order
 
@@ -1424,7 +1481,7 @@ TeamBO <- list(one=one, two=two, three=three, four=four, five=five, six=six, sev
 
 ```
 
-
+The Bullpen function is the starters function, six times. The result is a list of six different pitchers. 
 
 ###Bullpen
 
@@ -2009,9 +2066,33 @@ Bullpen <- list(one=one,two=two,three=three,four=four,five=five,six=six)
 
 ```
 
+This is where we start combining the statistics. For every player in the order, we must evaluate the matchup for that batter vs. each pitcher (i.e. the starters + the six bullpen guys). The result of this function is a list of nine *players*, and each list is seven matrices long. Each matrix has a list of all the statistics listed above, so: 
 
+SB 
+CS 
+stay 
 
+WP
+PB
+pitch
 
+K 
+contact 
+
+GIDP 
+SF/SH
+outorhit 
+
+hit 
+out 
+
+BB 
+1B
+2B 
+3B
+HR
+
+where each of the groups are probabilities that add up to 1. Each stat is basically a combo of either the ((batter prob+pitcher prob)/2) or ((catcher+pitcher+batter)/3).
 
 #Set up the Set-up
 
@@ -2019,8 +2100,6 @@ Bullpen <- list(one=one,two=two,three=three,four=four,five=five,six=six)
 LineupMKR <- function(BattingOrder,StartingPitcher,Bullpen,Catcher){
   ##Remember to weight the bullpens and the starting pitchers accordingly and that playername8 is correct but the rest need to be modelled after it
   
-  starterweight <- StartingPitcher$one["Inn/G",]/9
-  bullpenweight <- 1- starterweight
   
   playername1 <- matrix(0, 19, 7)
   dimnames(playername1)[[1]] <- c("SB", "stay", "CS", "WP",
@@ -3700,6 +3779,30 @@ playername9 <- matrix(0, 19, 7)
 
 ```
 
+Here is the most complex part of the code, in my opinion. There are 15 sets of matrices, and six of them are sets of seven matrices. (Seven, recalling, being the number of available pitchers for a given team) I will try to explain each one the best I can. 
+
+These first nine are the results of the base states given a certain event *pretty easily understood given the names of the probabilities matrices*. This is so the simulator can understand how people moved around the bases *i.e. who scored. For example, stolen bases are pretty simple — the runner, almost 95& of the time ends up on second if he starts on first. If he's on second, then he ends up on third if he gets the steal. Wild pitch/Passed Bal follows the same patter. If the batter walks, the runners advance a base. 
+
+The doubles, singles, errors, sacrifices and double plays are the variables. The changes in base states depend on a whole host of things, including the runner, the direction of the ball, the fielding, the tendencies of the team, the situation in the game, etc. Something with so much variability, at this point in this code, can only be coded with league averages. So the single/double/chaotic movement is tracked by previous instances in seasons in which those situations have occured.
+
+Prob_SB
+Prob_Single
+Prob_Double
+Prob_Walk 
+Prob_SB_OUT
+Prob_SF_SH
+Prob_ROE
+Prob_GIDP
+Prob_WP_PB
+
+These are the six lists of seven matrixes. Basically, these are just recoded versions of the players such that they can be references by the function *dataset$prob[[pitcher]][batter]*. So, given the definitions below *dataset$prob[[1]][5]* (the starter is pitching and the fifth batter in the order is up) would return that matchup's probability of a BB, 1B, 2B, 3B, HR. Again, these are all for the game simulator to sample as probabilities. 
+
+prob <- probabilities that the at-bat ends in a single, double, walk, hit by pitch, intentional walk, triple, and a home run
+probsb <- probabilities that the runner stays, steals the base, and goes but gets out 
+probwppb <- probabilities that there is a wild pitch, passed ball and neither in an at-bat
+probK  <- probabilities that the batter strikes out and does not
+probout <- probabilities that the batter gets an out that does not move the bases and a hit
+proboutorhit <- probabilities that the batter grounds into a double play, gets a sacrifice fly/hit and gets an out that doesn't move the bases or a hit
 
 #Set up the Simulator
 ```{r pressure, echo=FALSE}
@@ -5071,7 +5174,9 @@ runs_setup <- function(lineup){
 
 ```
 
+This is a simulation of the game — which, if you recall is ... two adjacent series of 27 outs (or 9 innings) that are made up of runners advancing and at-bats. At-bats being a pitcher's ability to beat a hitter and vice versa is easy enough to understand for any baseball fan I think; so think of runners advancing as a catcher and a pitcher against the runner and vice versa `before the ball is played` ... . This is the codified version of that. Every interaction either results in a whole host of different *events* that take you through the different possibilites that could occur within an at-bat. 
 
+It is a lot, and maybe the most complex to understand and explain how each part works. Basically, each little snippet either identifies the pitcher, inning, outs, runner, batter (every detail relevant to the at-bat that we have collected) or actually identifies a probability matrix and comes up with a *story* (event) for the at-bat. The resulting bits then deal with the transitions that might occur from batter to runner or pitcher to other pitcher or out to more outs or from inning to inning. It is a web that I could explain line by line but would probably need to go line by line to explain fully. Trust that it revolves around the average runs by an MLB team and I am working toward the variance, which is good but again could be better. I will list at the end where this code could all could improve and obviously a game is more complex than really any simulation could cover. This covers, I would say, a good portion of the factors that make up a game. `as defined above`
 
 
 #Game-Simulator
@@ -5233,6 +5338,8 @@ if (outs == 3) runner <- 10
 
 ```
 
+This function takes the lines of the day from action and reorganizes them with home team, home line, away team, away line. 
+
 #The Lines
 ```{r}
 thelines <- function(){
@@ -5252,6 +5359,7 @@ lines_teams
 
 ```
 
+This creates the variable that contains the game — which is the date, time, one team's score (from the simulator), the other team's score, and two lists of each team's lineup.
 
 #The God Function
 ```{r}
@@ -5354,6 +5462,7 @@ list(date=date,time=time,away_teamabbrev=team1lineup$ROTOWIRETEAM,home_teamabbre
 }
 ```
 
+This function creates a scoreboard of the games that are occuring today in order to easily automate the overall function.
 
 #Titans > Gods
 ```{r}
@@ -5730,6 +5839,8 @@ lister
 
 ```
 
+This puts the lines into the google sheet, a process explained in the google sheet. 
+
 #Lines into the Sheet
 ```{r}
 
@@ -5750,6 +5861,8 @@ updatelines <- function(){
 
 ```
 
+This is the function that puts all the matchup variable data into the google sheet. All the columns are explained in the google sheet. 
+
 #Game-to-sheet function
 ```{r}
 game_to_sheet <- function(gamenumber){
@@ -5762,7 +5875,7 @@ gs_add_row(MLB_model, ws = "edit_cells", input = c(givenmatch$date,givenmatch$ti
 ```
 
 
-
+This is the code I run every day! The first three can be run once a day to get the scoreboard, the lines as a placeholder and the number of games on the day. That allows the following two functions to be run repeatedly, putting the lines in over and over as they update throughout the day and then the function that puts the game data into the sheet. (Number corresponding to a matchup given the scoreboard)
 
 ###If I had a code to run...
 ```{r}
@@ -5770,11 +5883,11 @@ gamestoday <- Titanic()
 todayslines <- thelines()
 l_not_s <- length(todayslines$teamsplaying_home)
 updatelines()
-game_to_sheet(7)
+game_to_sheet(13)
 ```
 
 
-
+The google sheet
 
 ###Google Sheet set-up
 ```{r}

@@ -5047,7 +5047,7 @@ repeat{
         smtp <- server(host = "smtp.gmail.com",
                        port = 465,
                        username = "br0wnsw0rdb3ts@gmail.com",
-                       password = "Walpolesoccer6*")
+                       password = "password")
         smtp(email, verbose = TRUE)
         
       }
@@ -5067,7 +5067,7 @@ repeat{
         smtp <- server(host = "smtp.gmail.com",
                        port = 465,
                        username = "br0wnsw0rdb3ts@gmail.com",
-                       password = "Walpolesoccer6*")
+                       password = "password")
         smtp(email, verbose = TRUE)
         
       }
@@ -5087,7 +5087,7 @@ repeat{
         smtp <- server(host = "smtp.gmail.com",
                        port = 465,
                        username = "br0wnsw0rdb3ts@gmail.com",
-                       password = "Walpolesoccer6*")
+                       password = "password")
         smtp(email, verbose = TRUE)
         
       }
@@ -5107,7 +5107,7 @@ repeat{
         smtp <- server(host = "smtp.gmail.com",
                        port = 465,
                        username = "br0wnsw0rdb3ts@gmail.com",
-                       password = "Walpolesoccer6*")
+                       password = "password")
         smtp(email, verbose = TRUE)
         
       }
